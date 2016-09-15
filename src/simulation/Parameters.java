@@ -23,11 +23,11 @@ public class Parameters {
 	
 	final public static int numOfDatasetPerQueryMax = 3;
 	final public static int numOfDatasetPerQueryMin = 1;
-
 	
 	final public static double errorLow = 0.1;
 	final public static double errorMedium = 0.2;
 	final public static double errorHigh = 0.3;
+	
 	
 	final public static int lifeCycleMax = (int) ((int) numOfTSs * 0.2); 
 	final public static int lifeCycleMin = (int) ((int) numOfTSs * 0.02);
