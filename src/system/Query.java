@@ -10,7 +10,8 @@ import graph.Node;
 public class Query extends Node {
 	
 	private List<Dataset> dataset = null;
-	private User user = null;
+	private User user = null;   
+	
 //	private int startTime;
 //	private int occupyPeriod;
 //	private double sourceDataVolume = -1d;// read from parameters. the total size of source data of evaluating query q
