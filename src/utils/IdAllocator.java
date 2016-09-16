@@ -2,7 +2,7 @@ package utils;
 
 /**
  * utility class for handing out unique ids
- * A using class wishing to assign unique ids to each of its instances should declare a static menmber variable:
+ * A using class wishing to assign unique ids to each of its instances should declare a static member variable:
  * <code>
  *   static IdAllocator idAllocator = new IdAllocator();
  * <code>

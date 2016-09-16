@@ -1,17 +1,16 @@
 package system;
 
 import java.util.List;
-
 import simulation.Parameters;
 import utils.RanNum;
 
 public class Sample extends Dataset {
 	
 	private double error;
-	private double lifeCycle;//how many time slots
 	private double volume;
-	private Dataset parent;
-
+	private Dataset parentDataset;
+	private double lifeCycle;//how many time slots that this sample can live in the system
+	private DataCenter toBePlaced = null;//the destination where this sample will finally be placed
 
 	public Sample(double ID, String name, List<DataCenter> dcList) {
 		super(ID, name, dcList);
@@ -19,15 +18,15 @@ public class Sample extends Dataset {
 		int choice = RanNum.getRandomIntRange(3,1);
 		if(choice==1){
 			this.error = Parameters.errorLow;
-			this.volume = parent.getVolume() * (1 - this.error);
+			this.volume = parentDataset.getVolume() * (1 - this.error);
 		}
 		if(choice==2){
 			this.error = Parameters.errorMedium;
-			this.volume = parent.getVolume() * (1 - this.error);
+			this.volume = parentDataset.getVolume() * (1 - this.error);
 		}
 		if(choice==3){
 			this.error = Parameters.errorHigh;
-			this.volume = parent.getVolume() * (1 - this.error);
+			this.volume = parentDataset.getVolume() * (1 - this.error);
 		}
 		this.lifeCycle = RanNum.getRandomIntRange(Parameters.lifeCycleMax, Parameters.lifeCycleMin);
 	}
@@ -37,7 +36,7 @@ public class Sample extends Dataset {
 			double dems = 0d;
 			dems = sample.volume * Parameters.computingAllocatedToUnitData;
 			return dems; 
-		}
+	}
 
 	
 	//getter and setter
@@ -67,12 +66,20 @@ public class Sample extends Dataset {
 		this.volume = volume;
 	}
 
-	public Dataset getParent() {
-		return parent;
+	public Dataset getParentDataset() {
+		return parentDataset;
 	}
 
-	public void setParent(Dataset parent) {
-		this.parent = parent;
+	public void setParentDataset(Dataset parentDataset) {
+		this.parentDataset = parentDataset;
+	}
+	
+	public DataCenter getToBePlaced() {
+		return toBePlaced;
+	}
+
+	public void setToBePlaced(DataCenter toBePlaced) {
+		this.toBePlaced = toBePlaced;
 	}
 
 }

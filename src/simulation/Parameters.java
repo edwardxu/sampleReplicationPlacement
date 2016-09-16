@@ -28,11 +28,10 @@ public class Parameters {
 	final public static double errorMedium = 0.2;
 	final public static double errorHigh = 0.3;
 	
-	
 	final public static int lifeCycleMax = (int) ((int) numOfTSs * 0.2); 
 	final public static int lifeCycleMin = (int) ((int) numOfTSs * 0.02);
 	
-	/****************generaral cost settings ***********/
+	/****************general cost settings ***********/
 	// TODO please double check these cost settings. 
 	final public static double storageCostUnitDataMax = 0.0035;// $ per GB data //c_s(v_i) 
 	final public static double storageCostUnitDataMin = 0.0010;// $ per GB data //c_s(v_i) 
@@ -47,22 +46,7 @@ public class Parameters {
 	final public static double maxBandwidthCost = 0.12;// the maximum cost of transferring 1 GB data 
 	final public static double minBandwidthCost = 0.05;// the minimum cost of transferring 1 GB data
 	
-	/*****************settings of users*************/
-	final public static int numOfQueriesPerUserMax = 5;
-	final public static int numOfQueriesPerUserMin = 1;
-	
-	
-	
-//	final public static int numOfGroupsMax = 10; // the number of groups in the cloud 
-//	final public static int numOfGroupsMin = 5;
-//	
-//	public static int numOfUsersInAGroupMax = 20; //the number of users in a group 
-//	final public static int numOfUsersInAGroupMin = 5;
-//	
-//	public static double percentUsersInAGroupMax = 0.3;// maximum percent of users in a group that has data to place into the cloud 
-//	final public static double percentUsersInAGroupMin = 0.1;
-//	
-//	final public static int numOfCandidateDCsAUserMax = 5;
-//	final public static int numOfCandidateDCsAUserMin = 1;
+	//*****************settings of users*************/
+	//each user has one query per timeslot, the query can request multiple datasets
 
 }

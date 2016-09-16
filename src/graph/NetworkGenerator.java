@@ -14,6 +14,8 @@
 
 package graph;
 
+//generate a graph by reading data from external files
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -152,22 +154,22 @@ public class NetworkGenerator<V, E> implements GraphGenerator<V, E, V> {
 				e.printStackTrace(); 
 			}
 			
-			// add front end servers. 
-			
-			ArrayList<Integer> feConnectDCsIndex = RanNum.getDistinctInts(nodeList.size(), 0, Parameters.numOfFrontEndServers);
-			
-			for (Integer index : feConnectDCsIndex){
-				
-				NodeInitialParameters ni = new NodeInitialParameters();
-				
-				ni.id = BigDataManageSimulator.idAllocator.nextId();
-				ni.name = "front end server" + ni.id;
-				
-				NodeFactory<Node> nf = new NodeFactory<Node>(FrontEnd.class, ni);
-				V newVertex = (V) nf.createVertex();
-				target.addVertex(newVertex);
-				target.addEdge(newVertex, nodeList.get(index));
-			}
+//			// add front end servers. 
+//			
+//			ArrayList<Integer> feConnectDCsIndex = RanNum.getDistinctInts(nodeList.size(), 0, Parameters.numOfFrontEndServers);
+//			
+//			for (Integer index : feConnectDCsIndex){
+//				
+//				NodeInitialParameters ni = new NodeInitialParameters();
+//				
+//				ni.id = BigDataManageSimulator.idAllocator.nextId();
+//				ni.name = "front end server" + ni.id;
+//				
+//				NodeFactory<Node> nf = new NodeFactory<Node>(FrontEnd.class, ni);
+//				V newVertex = (V) nf.createVertex();
+//				target.addVertex(newVertex);
+//				target.addEdge(newVertex, nodeList.get(index));
+//			}
 			
 		} else if (1 == this.getGenerateType()){
 			//TODO if necessary

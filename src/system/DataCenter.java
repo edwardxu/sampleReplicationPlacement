@@ -13,9 +13,8 @@ public class DataCenter extends Node{
 	private double admittedSamples = 0d;
 	private double processingCost = 0d;
 	private double storageCost = 0d;
-//	private Set<DataCenter> virtualDataCenters = new HashSet<DataCenter>();// set of virtual data centers.
 //	private Map<Group, Set<InternetLink>> multicastTrees = new HashMap<Group, Set<InternetLink>>();
-//	
+	
 	/****************properties for a virtual data center*****************/
 	// used when this data center is a virtual data center. 
 	private DataCenter parent = null;
@@ -28,7 +27,7 @@ public class DataCenter extends Node{
 		this.storageCost = ni.storageCost;
 	}
 	
-	// used to contruct a virtual data center
+	// used to construct a virtual data center
 	public DataCenter(double id, String name, DataCenter parent){
 		super(id, name);
 		this.parent = parent; 
@@ -48,7 +47,7 @@ public class DataCenter extends Node{
 		this.admittedSamples = 0d;
 		this.parent = null;
 	}
-	public void admitSourceData(double dataVolume){
+	public void admitSample(double dataVolume){
 		this.admittedSamples += dataVolume;
 	}
 	

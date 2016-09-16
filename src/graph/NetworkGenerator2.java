@@ -11,8 +11,11 @@
  * 2-Dec-2011 : Initial revision (GB);
  *
  */
-
+//
+//generate a graph randoml
 package graph;
+
+//generate a graph randomly
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -27,7 +30,7 @@ import graph.Node;
 import graph.NodeFactory;
 import graph.NodeInitialParameters;
 import simulation.Parameters;
-import simulation.BigDataManageSimulator;
+import simulation.SamplePlacementSimulator;
 import utils.RanNum;
 
 public class NetworkGenerator2<V, E> implements GraphGenerator<V, E, V> {
@@ -53,7 +56,7 @@ public class NetworkGenerator2<V, E> implements GraphGenerator<V, E, V> {
 			
 			for (int i = 0; i < numOfDataCenters; i++) {
 				NodeInitialParameters ni = new NodeInitialParameters();				
-				ni.id = BigDataManageSimulator.idAllocator.nextId();
+				ni.id = SamplePlacementSimulator.idAllocator.nextId();
 				ni.name = "DC-" + ni.id;
 				
 				NodeFactory<Node> nf = new NodeFactory<Node>(DataCenter.class, ni);

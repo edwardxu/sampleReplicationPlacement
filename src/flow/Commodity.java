@@ -11,7 +11,6 @@ public class Commodity {
 	private double ID;
 	private Node source;
 	private Node sink;
-	
 	private double demand;
 	
 	private double delayconstraint;
@@ -20,8 +19,6 @@ public class Commodity {
 	private double currDemand;
 	
 	private ArrayList<FlowPath> flowPaths = new ArrayList<FlowPath>();
-	
-	private SourceData sourceData = null;
 	
 	public Commodity(double ID, Node source, Node sink){
 		this.source = source;
@@ -96,14 +93,6 @@ public class Commodity {
 	
 	public void addPath(FlowPath path){
 		this.flowPaths.add(path);
-	}
-
-	public SourceData getSourceData() {
-		return sourceData;
-	}
-
-	public void setSourceData(SourceData sourceData) {
-		this.sourceData = sourceData;
 	}
 
 	public ArrayList<FlowPath> getFlowPaths() {
