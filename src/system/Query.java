@@ -4,38 +4,41 @@ import simulation.SamplePlacementSimulator;
 import utils.RanNum;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 import graph.Node;
+
 public class Query extends Node {
 	
-	private List<Dataset> dataset = null;
-	private User user = null;   
+	private List<Dataset> datasets = null;
+	private User user = null; 
+	private int rate = 0;
 	
 //	private int startTime;
 //	private int occupyPeriod;
 //	private double sourceDataVolume = -1d;// read from parameters. the total size of source data of evaluating query q
 
-	public Query( double id, String name, List<DataCenter> dcList) {
+	public Query(List<DataCenter> dcList, List<Dataset> allDataSets) {
+		
 		super(SamplePlacementSimulator.idAllocator.nextId(), "Query");
 		
-		List<DataCenter> dataLocations = new ArrayList<DataCenter>();
-		int numOfDatasetLocations = RanNum.getRandomIntRange(Parameters.numOfDatasetPerQueryMax, Parameters.numOfDatasetPerQueryMin);
-		this.dataset = new ArrayList<Dataset>(numOfDatasetLocations);
+		int numOfDatasets = RanNum.getRandomIntRange(Parameters.numOfDatasetPerQueryMax, Parameters.numOfDatasetPerQueryMin);
+		List<Integer> indexOfDatasets = RanNum.getDistinctInts(allDataSets.size() - 1, 0, numOfDatasets);
+		this.datasets = new ArrayList<Dataset>(numOfDatasets);		
 		
-		List<Integer> indexOfDCsHaveRequestedDataset = RanNum.getDistinctInts(dcList.size(), 0, numOfDatasetLocations);
-		for (Integer index : indexOfDCsHaveRequestedDataset){
-			dataLocations.add(dcList.get(index));
+		for (Integer index : indexOfDatasets){
+			this.datasets.add(allDataSets.get(index));
 		}
+		
+		this.setRate(RanNum.getRandomIntRange(Parameters.queryRateMax, Parameters.queryRateMin));
 	}
 	
 	/***********************setter and getter*******************************/
-	public List<Dataset> getDataset() {
-		return dataset;
+	public List<Dataset> getDatasets() {
+		return datasets;
 	}
 
-	public void setDataset(List<Dataset> dataset) {
-		this.dataset = dataset;
+	public void setDatasets(List<Dataset> dataset) {
+		this.datasets = dataset;
 	}
 
 	public User getUser() {
@@ -44,6 +47,14 @@ public class Query extends Node {
 
 	public void setUser(User user) {
 		this.user = user;
+	}
+
+	public int getRate() {
+		return rate;
+	}
+
+	public void setRate(int rate) {
+		this.rate = rate;
 	}
 
 }
