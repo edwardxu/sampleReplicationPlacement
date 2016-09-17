@@ -3,6 +3,7 @@ package system;
 import java.util.List;
 
 import graph.Node;
+import simulation.Parameters;
 import simulation.SamplePlacementSimulator;
 import utils.RanNum;
 
@@ -11,11 +12,13 @@ public class Dataset {
 	private Node datacenter;
 	private double volume;
 	
-	public Dataset (double ID,  String name, List<DataCenter> dcList){
+	public Dataset (List<DataCenter> dcList) {
 		this.ID = SamplePlacementSimulator.idAllocator.nextId();
 		
 		int indexOfDCDatasetLocated = RanNum.getRandomIntRange(dcList.size(), 0);
 		this.datacenter = dcList.get(indexOfDCDatasetLocated);
+		// set the volume of this dataset
+		this.volume = RanNum.getRandomDoubleRange(Parameters.sizePerDatasetMax, Parameters.sizePerDatasetMin);
 	}
 	
 //	public boolean equals (Object another){

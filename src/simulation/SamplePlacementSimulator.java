@@ -1,7 +1,9 @@
 package simulation;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.jgrapht.alg.ConnectivityInspector;
 import org.jgrapht.graph.SimpleWeightedGraph;
@@ -10,22 +12,26 @@ import graph.InternetLink;
 import graph.NetworkGenerator;
 import graph.Node;
 import system.DataCenter;
-import system.User;
+import system.Dataset;
+import system.Query;
+import system.Sample;
 import utils.IdAllocator;
 import utils.RanNum;
 
 public class SamplePlacementSimulator {
 	private SimpleWeightedGraph<Node, InternetLink> datacenterNetwork = null;
 	public static IdAllocator idAllocator = new IdAllocator();
+	
 	private List<DataCenter> dataCenterList = new ArrayList<DataCenter>();
-	private List<User> users = new ArrayList<User>();
+	private Map<Integer, List<Dataset>> datasets = new HashMap<Integer, List<Dataset>>();
+	private Map<Integer, List<Sample>> samples = new HashMap<Integer, List<Sample>>();
+	private Map<Integer, List<Query>> queries = new HashMap<Integer,List<Query>>();
 
 	public SamplePlacementSimulator() {
-		this.setDataCenterList(new ArrayList<DataCenter>());
+		
 	}
 
 	public static void main(String[] s) {
-
 	}
 
 	/************************************
@@ -33,6 +39,7 @@ public class SamplePlacementSimulator {
 	 * 
 	 * @return
 	 ************************************/
+	
 	public SimpleWeightedGraph<Node, InternetLink> InitializeDataCenterNetwork(
 			SimpleWeightedGraph<Node, InternetLink> dcNet, String networkIndexPostfix) {
 
@@ -70,7 +77,7 @@ public class SamplePlacementSimulator {
 			for (Node node : dcNet.vertexSet()) {
 				if (node instanceof DataCenter) {
 					DataCenter dc = (DataCenter) node;
-					dc.clearAdmittedSourceData();
+					dc.clearAdmittedSamples();
 				} // TODO double check whether no need for front end servers.
 			}
 			for (InternetLink il : dcNet.edgeSet()) {
@@ -80,6 +87,48 @@ public class SamplePlacementSimulator {
 			this.datacenterNetwork = dcNet;
 		}
 		return datacenterNetwork;
+	}
+	
+	public Map<Integer, List<Dataset>> InitializeDatasetsAndSamples() {
+		if (this.datasets.isEmpty()){
+			for(int i = 0; i < Parameters.numOfTSs; i ++) {
+				int numOfDatasetsPerTS = RanNum.getRandomIntRange(Parameters.maxNumOfDatasetsPerTS, Parameters.minNumOfDatasetsPerTS);
+				List<Dataset> dss = new ArrayList<Dataset>();
+				List<Sample> sams = new ArrayList<Sample>();
+				for(int j = 0; j < numOfDatasetsPerTS; j ++) {
+					Dataset ds = new Dataset(this.getDataCenters());
+					dss.add(ds);
+					for (int s = 0; s < Parameters.numOfSamplesEachDataset; s ++){
+						Sample sample = new Sample(ds);
+						sams.add(sample);
+					}
+				}
+				this.datasets.put(i, dss);
+				this.samples.put(i, sams);
+			}
+		}
+		
+		return this.datasets;
+	}
+	
+	public Map<Integer, List<Query>> InitializeQueries() {
+		
+		//String numOfQueries = "";
+		if (this.queries.isEmpty()){// generate queries
+			for(int i = 0; i < Parameters.numOfTSs; i ++) {
+				
+				int numOfQueriesPerTS = RanNum.getRandomIntRange(Parameters.maxNumOfQueriesPerTS, Parameters.minNumOfQueriesPerTS);
+				//numOfQueries += numOfQueriesPerTS + " ";
+				List<Query> qus = new ArrayList<Query>();
+				for(int j = 0; j < numOfQueriesPerTS; j ++){
+					Query quer = new Query(this.getDataCenterList(), this.getDatasets().get(i));
+					qus.add(quer);
+				}
+				queries.put(i, qus);
+			}
+			//System.out.println(numOfQueries);
+		}
+		return this.queries;
 	}
 
 	public void modifyCosts() {
@@ -102,6 +151,17 @@ public class SamplePlacementSimulator {
 		for (InternetLink il : this.datacenterNetwork.edgeSet()) {
 			il.setCost(RanNum.getRandomDoubleRange(Parameters.maxBandwidthCost, Parameters.minBandwidthCost));
 		}
+	}
+	
+	public List<Sample> samplesOfDataset(int timeslot, Dataset ds){
+		
+		List<Sample> foundSamples = new ArrayList<Sample>();
+		for (Sample sample : this.getSamples().get(timeslot)){
+			if (sample.getParentDataset().equals(ds))
+				foundSamples.add(sample);
+		}
+		
+		return foundSamples;
 	}
 
 	public List<DataCenter> getDataCenters() {
@@ -142,12 +202,20 @@ public class SamplePlacementSimulator {
 		this.dataCenterList = dataCenterList;
 	}
 
-	public List<User> getUsers() {
-		return users;
+	public Map<Integer, List<Dataset>> getDatasets() {
+		return datasets;
 	}
 
-	public void setUsers(List<User> users) {
-		this.users = users;
+	public void setDatasets(Map<Integer, List<Dataset>> datasets) {
+		this.datasets = datasets;
+	}
+
+	public Map<Integer, List<Sample>> getSamples() {
+		return samples;
+	}
+
+	public void setSamples(Map<Integer, List<Sample>> samples) {
+		this.samples = samples;
 	}
 
 }
