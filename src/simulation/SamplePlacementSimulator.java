@@ -121,7 +121,7 @@ public class SamplePlacementSimulator {
 				//numOfQueries += numOfQueriesPerTS + " ";
 				List<Query> qus = new ArrayList<Query>();
 				for(int j = 0; j < numOfQueriesPerTS; j ++){
-					Query quer = new Query(this.getDataCenterList(), this.getDatasets().get(i));
+					Query quer = new Query(this.getDataCenters(), this.getDatasets().get(i));
 					qus.add(quer);
 				}
 				queries.put(i, qus);
@@ -194,14 +194,6 @@ public class SamplePlacementSimulator {
 		this.datacenterNetwork = datacenterNetwork;
 	}
 
-	public List<DataCenter> getDataCenterList() {
-		return dataCenterList;
-	}
-
-	public void setDataCenterList(List<DataCenter> dataCenterList) {
-		this.dataCenterList = dataCenterList;
-	}
-
 	public Map<Integer, List<Dataset>> getDatasets() {
 		return datasets;
 	}
@@ -216,6 +208,14 @@ public class SamplePlacementSimulator {
 
 	public void setSamples(Map<Integer, List<Sample>> samples) {
 		this.samples = samples;
+	}
+
+	public Map<Integer, List<Query>> getQueries() {
+		return queries;
+	}
+
+	public void setQueries(Map<Integer, List<Query>> queries) {
+		this.queries = queries;
 	}
 
 }

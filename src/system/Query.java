@@ -12,6 +12,7 @@ public class Query extends Node {
 	private List<Dataset> datasets = null;
 	private User user = null; 
 	private int rate = 0;
+	private double delayRequirement = Double.MAX_VALUE;
 	
 //	private int startTime;
 //	private int occupyPeriod;
@@ -30,6 +31,7 @@ public class Query extends Node {
 		}
 		
 		this.setRate(RanNum.getRandomIntRange(Parameters.queryRateMax, Parameters.queryRateMin));
+		this.setDelayRequirement((RanNum.getRandomDoubleRange(Parameters.queryDelayRequirementMax, Parameters.queryDelayRequirementMin)));
 	}
 	
 	/***********************setter and getter*******************************/
@@ -37,8 +39,8 @@ public class Query extends Node {
 		return datasets;
 	}
 
-	public void setDatasets(List<Dataset> dataset) {
-		this.datasets = dataset;
+	public void setDatasets(List<Dataset> datasets) {
+		this.datasets = datasets;
 	}
 
 	public User getUser() {
@@ -55,6 +57,14 @@ public class Query extends Node {
 
 	public void setRate(int rate) {
 		this.rate = rate;
+	}
+
+	public double getDelayRequirement() {
+		return delayRequirement;
+	}
+
+	public void setDelayRequirement(double delayRequirement) {
+		this.delayRequirement = delayRequirement;
 	}
 
 }

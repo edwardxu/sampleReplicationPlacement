@@ -7,6 +7,9 @@ public class Parameters {
 	final public static int numOfTSs = 101;
 
 	final public static int roundNum = 5;
+	
+	final public static double minLinkDelay = 5; //ms
+	final public static double maxLinkDelay = 50; //ms
 	/**************data center****************/
 	final public static double connectivityProbality = 0.2;// the connection probability between edges
 	public static int numOfDataCenters = 20;//the number of data centers in the distributed cloud 
@@ -35,6 +38,9 @@ public class Parameters {
 	
 	final public static int queryRateMax = 10;// to be reset
 	final public static int queryRateMin = 1;// to be reset
+	
+	final public static double queryDelayRequirementMax = 50; // ms
+	final public static double queryDelayRequirementMin = 200;// ms
 	
 	final public static double [] errorBounds = {0.05, 0.1, 0.15, 0.2, 0.25};
 	

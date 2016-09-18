@@ -20,6 +20,7 @@ public class InternetLink extends DefaultWeightedEdge {
 	private static final long serialVersionUID = 1L;
 	private double capacity;
 	private double cost;// for transmitting 1M data. 
+	private double delay; 
 	private Node edgeSource = null; 
 	private Node edgeTarget = null;
 	
@@ -33,6 +34,7 @@ public class InternetLink extends DefaultWeightedEdge {
 		super();
 		this.capacity = RanNum.getRandomDoubleRange(Parameters.maxBandwidthPerLink,  Parameters.minBandwidthPerLink); 
 		this.setCost(RanNum.getRandomDoubleRange(Parameters.maxBandwidthCost, Parameters.minBandwidthCost));
+		this.setDelay(RanNum.getRandomDoubleRange(Parameters.maxLinkDelay, Parameters.minLinkDelay));
 	}
 	
 	public void clear(){
@@ -210,5 +212,13 @@ public class InternetLink extends DefaultWeightedEdge {
 
 	public void setEdgeTarget(Node edgeTarget) {
 		this.edgeTarget = edgeTarget;
+	}
+
+	public double getDelay() {
+		return delay;
+	}
+
+	public void setDelay(double delay) {
+		this.delay = delay;
 	}
 }
