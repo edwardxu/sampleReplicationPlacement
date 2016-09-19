@@ -106,7 +106,7 @@ public class ProposedHeuristicAlg {
 					this.updateEdgeCostAndCapacities(datacenterNetwork, flowNet, error);
 					DijkstraShortestPath<Node, MinCostFlowEdge> shortestPath = new DijkstraShortestPath<Node, MinCostFlowEdge>(flowNet, comm.getSource(), comm.getSink());
 					
-					if (null == shortestPath || shortestPath.getPathEdgeList().isEmpty()){
+					if (null == shortestPath.getPath() || shortestPath.getPathEdgeList().isEmpty()){
 						System.out.println("ERROR: shortest path should not be empty!!");
 						System.exit(0);
 					}

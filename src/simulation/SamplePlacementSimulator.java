@@ -49,7 +49,6 @@ public class SamplePlacementSimulator {
 			ProposedHeuristicAlg heuAlg = new ProposedHeuristicAlg(simulator);
 			heuAlg.run();
 		}
-	
 	}
 
 	/************************************
