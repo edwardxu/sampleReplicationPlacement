@@ -8,6 +8,7 @@ import java.util.Map;
 import org.jgrapht.alg.ConnectivityInspector;
 import org.jgrapht.graph.SimpleWeightedGraph;
 
+import algs.ProposedHeuristicAlg;
 import graph.InternetLink;
 import graph.NetworkGenerator;
 import graph.Node;
@@ -32,14 +33,23 @@ public class SamplePlacementSimulator {
 	}
 
 	public static void main(String[] s) {
-		
+		performanceHeuristic();
 	}
 	
 	public static void performanceHeuristic() {
-		
-		
-		
-		
+		for(int round = 0; round < Parameters.roundNum; round ++) {
+			String networkIndexPostFix = "";
+			if (round > 0) 
+				networkIndexPostFix = "-" + round;
+			
+			SamplePlacementSimulator simulator = new SamplePlacementSimulator();
+			simulator.InitializeDataCenterNetwork(simulator.getDatacenterNetwork(), networkIndexPostFix);//get the data center network (cloud network)			
+			simulator.InitializeDatasetsAndSamples();
+			simulator.InitializeQueries();
+			ProposedHeuristicAlg heuAlg = new ProposedHeuristicAlg(simulator);
+			heuAlg.run();
+		}
+	
 	}
 
 	/************************************
