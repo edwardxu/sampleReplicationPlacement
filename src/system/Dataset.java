@@ -1,6 +1,8 @@
 package system;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import graph.Node;
 import simulation.Parameters;
@@ -11,6 +13,7 @@ public class Dataset {
 	private double ID;
 	private Node datacenter;
 	private double volume;
+	private Set<Sample> samples = null; 
 	
 	public Dataset (List<DataCenter> dcList) {
 		this.ID = SamplePlacementSimulator.idAllocator.nextId();
@@ -19,6 +22,7 @@ public class Dataset {
 		this.datacenter = dcList.get(indexOfDCDatasetLocated);
 		// set the volume of this dataset
 		this.volume = RanNum.getRandomDoubleRange(Parameters.sizePerDatasetMax, Parameters.sizePerDatasetMin);
+		this.setSamples(new HashSet<Sample>());
 	}
 	
 //	public boolean equals (Object another){
@@ -33,6 +37,14 @@ public class Dataset {
 //		else 
 //			return false;
 //	}
+	
+	public Sample getSample(double error){
+		for (Sample sample : this.getSamples()){
+			if (error == sample.getError())
+				return sample; 
+		}
+		return null; 
+	}
 	
 	public double getID() {
 		return ID;
@@ -51,5 +63,13 @@ public class Dataset {
 	}
 	public void setVolume(double volume) {
 		this.volume = volume;
+	}
+
+	public Set<Sample> getSamples() {
+		return samples;
+	}
+
+	public void setSamples(Set<Sample> samples) {
+		this.samples = samples;
 	} 
 }

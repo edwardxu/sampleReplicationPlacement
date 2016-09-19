@@ -2,6 +2,7 @@ package flow;
 
 import java.util.ArrayList;
 import graph.Node;
+import simulation.SamplePlacementSimulator;
 
 // demand node
 public class Commodity {
@@ -18,13 +19,13 @@ public class Commodity {
 	
 	private ArrayList<FlowPath> flowPaths = new ArrayList<FlowPath>();
 	
-	public Commodity(double ID, Node source, Node sink){
+	public Commodity(Node source, Node sink, double demand){
+		this.ID = SamplePlacementSimulator.idAllocator.nextId();
 		this.source = source;
 		this.sink = sink;
 		this.setDemand(demand);
 		this.currDemand = demand;
 		this.setDelayconstraint(delayconstraint);
-		this.ID = ID;
 	}
 	
 	public Node getSource() {

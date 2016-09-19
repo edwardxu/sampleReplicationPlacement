@@ -1,4 +1,5 @@
 package system;
+
 import simulation.Parameters;
 import simulation.SamplePlacementSimulator;
 import utils.RanNum;
@@ -13,6 +14,7 @@ public class Query extends Node {
 	private User user = null; 
 	private int rate = 0;
 	private double delayRequirement = Double.MAX_VALUE;
+	private DataCenter homeDataCenter = null; 
 	
 //	private int startTime;
 //	private int occupyPeriod;
@@ -32,6 +34,9 @@ public class Query extends Node {
 		
 		this.setRate(RanNum.getRandomIntRange(Parameters.queryRateMax, Parameters.queryRateMin));
 		this.setDelayRequirement((RanNum.getRandomDoubleRange(Parameters.queryDelayRequirementMax, Parameters.queryDelayRequirementMin)));
+		
+		int indexOfDCDatasetLocated = RanNum.getRandomIntRange(dcList.size(), 0);
+		this.setHomeDataCenter(dcList.get(indexOfDCDatasetLocated));
 	}
 	
 	/***********************setter and getter*******************************/
@@ -65,6 +70,14 @@ public class Query extends Node {
 
 	public void setDelayRequirement(double delayRequirement) {
 		this.delayRequirement = delayRequirement;
+	}
+
+	public DataCenter getHomeDataCenter() {
+		return homeDataCenter;
+	}
+
+	public void setHomeDataCenter(DataCenter homeDataCenter) {
+		this.homeDataCenter = homeDataCenter;
 	}
 
 }

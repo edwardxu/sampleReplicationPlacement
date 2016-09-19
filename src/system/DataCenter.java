@@ -74,6 +74,10 @@ public class DataCenter extends Node{
 		this.availComputing = this.computingCapacity - occupiedComputing;
 		return this.availComputing;
 	}
+	
+	public boolean isSampleAdmitted(Sample sample){
+		return this.getAdmittedSamples().contains(sample);
+	}
 	public void clearAdmittedSamples(){
 		this.getAdmittedSamples().clear();
 		this.volumeOfAdmittedSamples = 0d;
