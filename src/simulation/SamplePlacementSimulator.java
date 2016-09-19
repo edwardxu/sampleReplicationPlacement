@@ -101,6 +101,7 @@ public class SamplePlacementSimulator {
 					for (int s = 0; s < Parameters.numOfSamplesEachDataset; s ++){
 						Sample sample = new Sample(ds);
 						sams.add(sample);
+						ds.getSamples().add(sample);
 					}
 				}
 				this.datasets.put(i, dss);
