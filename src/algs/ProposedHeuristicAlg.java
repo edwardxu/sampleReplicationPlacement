@@ -62,7 +62,7 @@ public class ProposedHeuristicAlg {
 		for (int timeslot = 0; timeslot < Parameters.numOfTSs; timeslot++) {
 
 			if (timeslot > 0)
-				this.simulator.modifyCosts();
+				this.simulator.modifyCosts();// double check this. 
 
 			List<Commodity> commodities = new ArrayList<Commodity>();
 			SimpleWeightedGraph<Node, MinCostFlowEdge> flowNet = this.initializeFlowNetwork(commodities, timeslot);
