@@ -14,6 +14,7 @@ public class Dataset {
 	private Node datacenter;
 	private double volume;
 	private Set<Sample> samples = null; 
+	private Set<Sample> placedSamples = null;
 	
 	public Dataset (List<DataCenter> dcList) {
 		this.ID = SamplePlacementSimulator.idAllocator.nextId();
@@ -23,6 +24,7 @@ public class Dataset {
 		// set the volume of this dataset
 		this.volume = RanNum.getRandomDoubleRange(Parameters.sizePerDatasetMax, Parameters.sizePerDatasetMin);
 		this.setSamples(new HashSet<Sample>());
+		this.setPlacedSamples(new HashSet<Sample>());
 	}
 	
 //	public boolean equals (Object another){
@@ -38,7 +40,7 @@ public class Dataset {
 //			return false;
 //	}
 	
-	public Sample getSample(double error){
+	public Sample getSample(double error) {
 		for (Sample sample : this.getSamples()){
 			if (error == sample.getError())
 				return sample; 
@@ -71,5 +73,13 @@ public class Dataset {
 
 	public void setSamples(Set<Sample> samples) {
 		this.samples = samples;
+	}
+
+	public Set<Sample> getPlacedSamples() {
+		return placedSamples;
+	}
+
+	public void setPlacedSamples(Set<Sample> placedSamples) {
+		this.placedSamples = placedSamples;
 	} 
 }
