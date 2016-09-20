@@ -308,7 +308,7 @@ public class ProposedHeuristicAlg {
 			double error
 			) {
 		
-		for (Commodity comm : commodities){
+		for (Commodity comm : commodities) {
 			DemandNode demandNode = (DemandNode) comm.getSource();
 			
 			for (Node dcNode : simulator.getDataCenters()) {
@@ -327,10 +327,18 @@ public class ProposedHeuristicAlg {
 					delay += shortestPath.getPathEdgeList().get(i).getDelay();
 				}
 				
-				if (delay <= demandNode.getQuery().getDelayRequirement() && 
-						(demandNode.getDataset().getSample(error).getVolume() * Parameters.computingAllocatedToUnitData < ((DataCenter) dcNode).getAvailableComputing())) {
-					flowNetwork.addEdge(comm.getSource(), dcNode);
+				Sample sample = demandNode.getDataset().getSample(error); 
+				
+				if (((DataCenter) dcNode).isSampleAdmitted(sample)){
+					if (delay <= demandNode.getQuery().getDelayRequirement() )
+						flowNetwork.addEdge(comm.getSource(), dcNode);
+				} else {
+					if (delay <= demandNode.getQuery().getDelayRequirement() && 
+							(demandNode.getDataset().getSample(error).getVolume() * Parameters.computingAllocatedToUnitData < ((DataCenter) dcNode).getAvailableComputing())) {
+						flowNetwork.addEdge(comm.getSource(), dcNode);
+					}
 				}
+				
 			}
 		}
 		
