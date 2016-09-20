@@ -50,6 +50,11 @@ public class ProposedApproximationAlg {
 		String processCostPerTimeSlot = "";
 
 		for (int timeslot = 0; timeslot < Parameters.numOfTSs; timeslot++) {
+			if (timeslot > 0)
+				this.simulator.modifyCosts();// double check this. 
+			
+			// the algorithm is divided into steps
+			// step (1), solve the ILP
 			
 		}
 
