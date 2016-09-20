@@ -16,8 +16,8 @@ public class Parameters {
 	final public static double maxComputingPerDC = 2000;//GHz  //the maximum computing capacity of a data center
 	final public static double minComputingPerDC = 1000;//GHz  //the minimum computing capacity of a data center
 
-	final public static double minLinkDelay = 5; //ms
-	final public static double maxLinkDelay = 50; //ms
+	final public static double minLinkDelay = 1; //ms
+	final public static double maxLinkDelay = 5; //ms
 	
 	final public static double maxBandwidthPerLink = 10;//1;//Gbps //the maximum network capacity of an inter-datacentre link
 	final public static double minBandwidthPerLink = 1;//0.1;//Gbps   //the minimum network capacity of an inter-datacenter link
@@ -32,7 +32,7 @@ public class Parameters {
 	public static int maxNumOfDatasetsPerTS = 100;// to be reset
 	public static int minNumOfDatasetsPerTS = 50;// to be reset
 	
-	public static int numOfSamplesEachDataset = 3;
+	//public static int numOfSamplesEachDataset = 3;
 	
 	/**************queries****************/
 	public static int maxNumOfQueriesPerTS = 20; // to be reset
@@ -44,8 +44,8 @@ public class Parameters {
 	final public static int numOfDatasetPerQueryMax = 3;
 	final public static int numOfDatasetPerQueryMin = 1;
 	
-	final public static double queryDelayRequirementMax = 50; // ms
-	final public static double queryDelayRequirementMin = 200;// ms
+	final public static double queryDelayRequirementMax = 10; // ms
+	final public static double queryDelayRequirementMin = 100;// ms
 	
 	final public static int lifeCycleMax = (int) ((int) numOfTSs * 0.2); 
 	final public static int lifeCycleMin = (int) ((int) numOfTSs * 0.02);

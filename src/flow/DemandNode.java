@@ -9,13 +9,13 @@ public class DemandNode extends Node {
 	
 	private Query query = null; 
 	private Dataset dataset = null;
-	private Sample sample = null; 
+	//private Sample sample = null; 
 	
-	public DemandNode(double id, String name, Query query, Dataset dataset, Sample sample){
+	public DemandNode(double id, String name, Query query, Dataset dataset){
 		super(id, name);
 		this.setQuery(query); 
 		this.setDataset(dataset); 
-		this.setSample(sample);
+		//this.setSample(sample);
 	}
 
 	public Query getQuery() {
@@ -34,11 +34,11 @@ public class DemandNode extends Node {
 		this.dataset = dataset;
 	}
 
-	public Sample getSample() {
-		return sample;
-	}
-
-	public void setSample(Sample sample) {
-		this.sample = sample;
-	}
+//	public Sample getSample() {
+//		return sample;
+//	}
+//
+//	public void setSample(Sample sample) {
+//		this.sample = sample;
+//	}
 }

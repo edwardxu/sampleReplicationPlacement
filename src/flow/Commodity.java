@@ -11,9 +11,7 @@ public class Commodity {
 	private Node source;
 	private Node sink;
 	private double demand;
-	
-	private double delayconstraint;
-	
+		
 	//used in the steps of each iteration in the Minimum cost multicommodity flow algorithm
 	private double currDemand;
 	
@@ -25,7 +23,6 @@ public class Commodity {
 		this.sink = sink;
 		this.setDemand(demand);
 		this.currDemand = demand;
-		this.setDelayconstraint(delayconstraint);
 	}
 	
 	public Node getSource() {
@@ -58,14 +55,6 @@ public class Commodity {
 
 	public void setDemand(double demand) {
 		this.demand = demand;
-	}
-
-	public double getDelayconstraint() {
-		return delayconstraint;
-	}
-
-	public void setDelayconstraint(double delayconstraint) {
-		this.delayconstraint = delayconstraint;
 	}
 
 	public double getID() {

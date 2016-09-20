@@ -38,9 +38,7 @@ public class InternetLink extends DefaultWeightedEdge {
 	}
 	
 	public void clear(){
-		
 		//this.capacity = RanNum.getRandomDoubleRange(Parameters.maxBandwidthPerLink,  Parameters.minBandwidthPerLink); 
-		
 		intermediateResults = new ArrayList<DataTransmission>();
 		sourceData = new HashMap<User, ArrayList<DataTransmission>>();
 	}

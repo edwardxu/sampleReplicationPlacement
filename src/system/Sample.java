@@ -11,10 +11,10 @@ public class Sample {
 	private double lifeCycle;//how many time slots that this sample can live in the system
 	private DataCenter toBePlaced = null;//the destination where this sample will finally be placed
 
-	public Sample(Dataset parent) {
+	public Sample(Dataset parent, int errorIndex) {
 		this.parentDataset = parent;
-		int choice = RanNum.getRandomIntRange(Parameters.errorBounds.length - 1, 0);		
-		this.error = Parameters.errorBounds[choice];
+		//int choice = RanNum.getRandomIntRange(Parameters.errorBounds.length - 1, 0);		
+		this.error = Parameters.errorBounds[errorIndex];
 		this.volume = parentDataset.getVolume() * (1 - this.error);
 		this.lifeCycle = RanNum.getRandomIntRange(Parameters.lifeCycleMax, Parameters.lifeCycleMin);
 	}
