@@ -58,15 +58,18 @@ public class ProposedHeuristicAlg {
 				this.simulator.modifyCosts();// double check this. 
 
 			List<Commodity> commodities = new ArrayList<Commodity>();
-			int errorIndexForUnAdmitted = 0; 
+			List<Commodity> rejectedCommodities = new ArrayList<Commodity>();
+			int errorIndexForUnAdmitted = 0;
 			SimpleWeightedGraph<Node, MinCostFlowEdge> flowNet = this.initializeFlowNetwork(datacenterNetwork, commodities, timeslot, Parameters.errorBounds[errorIndexForUnAdmitted]);
 			boolean increaseAdmittedErrors = false;
 			
 			while(!commodities.isEmpty()) {
 				
+				int numOfDCsHaveSampleErrorIncreased = 0; 
 				if (increaseAdmittedErrors) {
 					for (DataCenter dc : this.simulator.getDataCenters()) {
 						Set<Sample> adjustedSamples = new HashSet<Sample>();
+						boolean haveSampleErrorsIncreased = false; 
 						for (Sample admittedSample : dc.getAdmittedSamples()) {
 							
 							int newErrorIndex = -1;
@@ -85,10 +88,13 @@ public class ProposedHeuristicAlg {
 								Set<Query> admittedQueriesThisSample = dc.getAdmittedQueriesSamples().get(admittedSample);
 								dc.getAdmittedQueriesSamples().remove(admittedSample);
 								dc.getAdmittedQueriesSamples().put(newSample, admittedQueriesThisSample);
+								haveSampleErrorsIncreased = true; 
 							} else {
 								adjustedSamples.add(admittedSample);
 							}
 						}
+						if (haveSampleErrorsIncreased)
+							numOfDCsHaveSampleErrorIncreased ++; 
 						
 						dc.setAdmittedSamples(adjustedSamples);
 					}
@@ -97,18 +103,25 @@ public class ProposedHeuristicAlg {
 				}
 				
 				double error = Parameters.errorBounds[errorIndexForUnAdmitted];
-				for (Iterator<Commodity> iter = commodities.iterator(); iter.hasNext(); ){
+				
+				for (Iterator<Commodity> iter = commodities.iterator(); iter.hasNext(); ) {
 					Commodity comm = iter.next();
 					DemandNode deNode = (DemandNode) comm.getSource();
 					Query toBeAdmittedQuery = deNode.getQuery();
 					Sample toBeAdmittedSample = deNode.getDataset().getSample(error);
 					
 					this.updateEdgeCostAndCapacities(datacenterNetwork, flowNet, error);
+					
 					DijkstraShortestPath<Node, MinCostFlowEdge> shortestPath = new DijkstraShortestPath<Node, MinCostFlowEdge>(flowNet, comm.getSource(), comm.getSink());
 					
-					if (null == shortestPath || shortestPath.getPathEdgeList().isEmpty()){
-						System.out.println("ERROR: shortest path should not be empty!!");
-						System.exit(0);
+					if (null == shortestPath.getPath() || shortestPath.getPathEdgeList().isEmpty()){
+						//System.out.println("ERROR: shortest path should not be empty!!");
+						//System.exit(0);
+						if (increaseAdmittedErrors && (numOfDCsHaveSampleErrorIncreased == 0)){
+							rejectedCommodities.add(comm);
+							iter.remove();
+							continue; 
+						}
 					}
 					
 					DataCenter targetDC = null;
@@ -129,13 +142,14 @@ public class ProposedHeuristicAlg {
 					// admit this sample into "targetDC"
 					targetDC.admitSample(toBeAdmittedSample, toBeAdmittedQuery);
 					toBeAdmittedSample.setToBePlaced(targetDC);
-					iter.remove();// remove this commodity. 
+					iter.remove();//  admit this commodity and remove it from the list. 
 				}
 				
 				if (!commodities.isEmpty()) {
 					if (errorIndexForUnAdmitted < Parameters.errorBounds.length - 1) {
 						errorIndexForUnAdmitted ++;
 						flowNet = adjustFlowNetwork(datacenterNetwork, flowNet, commodities, Parameters.errorBounds[errorIndexForUnAdmitted]);
+						increaseAdmittedErrors = false;
 					} else 
 						increaseAdmittedErrors = true;
 				}
@@ -196,6 +210,7 @@ public class ProposedHeuristicAlg {
 	private void updateEdgeCostAndCapacities(SimpleWeightedGraph<Node, InternetLink> dcNetwork, SimpleWeightedGraph<Node, MinCostFlowEdge> flowNetwork, double error) {
 		
 		double totalAvailableCapacity = 0d;
+		
 		for (MinCostFlowEdge flowEdge : flowNetwork.edgeSet()) {
 			Node edgeS = flowNetwork.getEdgeSource(flowEdge);
 			Node edgeT = flowNetwork.getEdgeTarget(flowEdge);
@@ -203,11 +218,11 @@ public class ProposedHeuristicAlg {
 			
 			if ((edgeS instanceof DataCenter)
 					&& (edgeT instanceof DataCenter) 
-					&& (((DataCenter) edgeS).getParent() == null)){
+					&& (((DataCenter) edgeS).getParent() == null)) {
 				dc = (DataCenter) edgeS; 
 			} else if ((edgeS instanceof DataCenter)
 					&& (edgeT instanceof DataCenter) 
-					&& (((DataCenter) edgeT).getParent() == null)){
+					&& (((DataCenter) edgeT).getParent() == null)) {
 				dc = (DataCenter) edgeT; 
 			}
 			
@@ -230,11 +245,11 @@ public class ProposedHeuristicAlg {
 			
 			if ((edgeS instanceof DemandNode) && (edgeT instanceof DataCenter)){
 				deNode = (DemandNode) edgeS; 
-				sample = deNode.getSample(); 
+				sample = deNode.getDataset().getSample(error); 
 				dc = (DataCenter) edgeT;
 			} else if ((edgeT instanceof DemandNode)&&(edgeS instanceof DataCenter)) {
 				deNode = (DemandNode) edgeT; 
-				sample = deNode.getSample(); 
+				sample = deNode.getDataset().getSample(error); 
 				dc = (DataCenter) edgeS;
 			} 
 			if (edgeS.getName().equals("Virtual-Sink") || edgeT.getName().equals("Virtual-Sink")){
@@ -344,7 +359,8 @@ public class ProposedHeuristicAlg {
 		for(Query query : queriesAccessData) {
 			List<Dataset> dsListOfAQuery = query.getDatasets();//get the list of datasets that query will access
 			for (Dataset dsQuery : dsListOfAQuery) {
-				DemandNode demandNode = new DemandNode(SamplePlacementSimulator.idAllocator.nextId(), "Demand Node", query, dsQuery, dsQuery.getSample(error));
+				DemandNode demandNode = new DemandNode(SamplePlacementSimulator.idAllocator.nextId(), "Demand Node", query, dsQuery);
+				demandNodes.add(demandNode);
 				flowNetwork.addVertex(demandNode);
 				// create a new commodity that needs to be routed to virtualSink. 
 				Commodity comm = new Commodity(demandNode, virtualSink, dsQuery.getVolume());
@@ -359,16 +375,11 @@ public class ProposedHeuristicAlg {
 			DataCenter vDC = new DataCenter(SamplePlacementSimulator.idAllocator.nextId(), "Virtual Data Center", dc);
 			virtualDCNodes.add(vDC);
 			flowNetwork.addVertex(vDC);
-			//MinCostFlowEdge edge = 
 			flowNetwork.addEdge(dc, vDC);
-			//edge.setCost(0d);
-			//edge.setCapacity(dc.getComputingCapacity() / Parameters.computingAllocatedToUnitData);//TODO double check this. 
-			//totalCapacity += dc.getComputingCapacity() / Parameters.computingAllocatedToUnitData;
-			//MinCostFlowEdge edge2 = 
 			flowNetwork.addEdge(vDC, virtualSink);			
 		}
 		
-		for (Node deNode : demandNodes){
+		for (Node deNode : demandNodes) {
 			DemandNode demandNode = (DemandNode) deNode;
 			for (Node dcNode : dcNodes) {
 				//check the delay from the home datacenter of the query to dcNode, if yes, there is an edge

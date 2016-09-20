@@ -8,6 +8,7 @@ import java.util.Map;
 import org.jgrapht.alg.ConnectivityInspector;
 import org.jgrapht.graph.SimpleWeightedGraph;
 
+import algs.ProposedApproximationAlg;
 import algs.ProposedHeuristicAlg;
 import graph.InternetLink;
 import graph.NetworkGenerator;
@@ -37,6 +38,7 @@ public class SamplePlacementSimulator {
 	}
 	
 	public static void performanceHeuristic() {
+		
 		for(int round = 0; round < Parameters.roundNum; round ++) {
 			String networkIndexPostFix = "";
 			if (round > 0) 
@@ -49,7 +51,23 @@ public class SamplePlacementSimulator {
 			ProposedHeuristicAlg heuAlg = new ProposedHeuristicAlg(simulator);
 			heuAlg.run();
 		}
+		
+	}
 	
+	public static void performanceApproximation() {
+		
+		for(int round = 0; round < Parameters.roundNum; round ++) {
+			String networkIndexPostFix = "";
+			if (round > 0) 
+				networkIndexPostFix = "-" + round;
+			
+			SamplePlacementSimulator simulator = new SamplePlacementSimulator();
+			simulator.InitializeDataCenterNetwork(simulator.getDatacenterNetwork(), networkIndexPostFix);//get the data center network (cloud network)			
+			simulator.InitializeDatasetsAndSamples();
+			simulator.InitializeQueries();
+			ProposedApproximationAlg approAlg = new ProposedApproximationAlg(simulator);
+			approAlg.run();
+		}
 	}
 
 	/************************************
@@ -116,8 +134,8 @@ public class SamplePlacementSimulator {
 				for(int j = 0; j < numOfDatasetsPerTS; j ++) {
 					Dataset ds = new Dataset(this.getDataCenters());
 					dss.add(ds);
-					for (int s = 0; s < Parameters.numOfSamplesEachDataset; s ++){
-						Sample sample = new Sample(ds);
+					for (int s = 0; s < Parameters.errorBounds.length; s ++){
+						Sample sample = new Sample(ds, s);
 						sams.add(sample);
 						ds.getSamples().add(sample);
 					}
