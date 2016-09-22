@@ -1,9 +1,11 @@
 package system;
 
+import graph.Node;
 import simulation.Parameters;
+import simulation.SamplePlacementSimulator;
 import utils.RanNum;
 
-public class Sample {
+public class Sample extends Node {
 	
 	private double error;
 	private double volume;
@@ -12,6 +14,7 @@ public class Sample {
 	private DataCenter toBePlaced = null;//the destination where this sample will finally be placed
 
 	public Sample(Dataset parent, int errorIndex) {
+		super(SamplePlacementSimulator.idAllocator.nextId(), "Sample");
 		this.parentDataset = parent;
 		//int choice = RanNum.getRandomIntRange(Parameters.errorBounds.length - 1, 0);		
 		this.error = Parameters.errorBounds[errorIndex];
