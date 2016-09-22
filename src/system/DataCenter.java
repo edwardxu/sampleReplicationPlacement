@@ -28,7 +28,7 @@ public class DataCenter extends Node {
 //	private Set<InternetLink> tree = null; 
 	
 	/***********Initialization functions***********/
-	public DataCenter(NodeInitialParameters ni){
+	public DataCenter(NodeInitialParameters ni) {
 		this(ni.id, ni.name);
 		this.processingCost = ni.processingCost;
 		this.storageCost = ni.storageCost;
@@ -40,7 +40,7 @@ public class DataCenter extends Node {
 		this.parent = parent; 
 	}
 	
-	private DataCenter(double id, String name){
+	private DataCenter(double id, String name) {
 		super(id, name);
 		this.setAdmittedSamples(new HashSet<Sample>());
 		this.setAdmittedQueriesSamples(new HashMap<Sample, Set<Query>>());
