@@ -53,16 +53,9 @@ public class ProposedApproximationAlg {
 		}
 	}
 	
-	public void run(){
+	public void run() {
 		SimpleWeightedGraph<Node, InternetLink> datacenterNetwork = this.simulator.getDatacenterNetwork();
 		setEdgeWeightDataCenterNetwork(datacenterNetwork);
-
-		int numOfAdmittedQueriesPerTimeSlot = 0;
-		String costPerTimeSlot = "";
-		String storageCostPerTimeSlot = "";
-		String updateCostPerTimeSlot = "";
-		String accessCostPerTimeSlot = "";
-		String processCostPerTimeSlot = "";
 
 		for (int timeslot = 0; timeslot < Parameters.numOfTSs; timeslot++) {
 			if (timeslot > 0)
@@ -70,7 +63,69 @@ public class ProposedApproximationAlg {
 			
 			// the algorithm is divided into steps
 			// step (1), solve the ILP
+			double error = Parameters.errorBounds[0]; 
+			ArrayList<Sample> sampleList = new ArrayList<Sample>();
+			ArrayList<Query> queryList = new ArrayList<Query>();
 			
+			for (Query query : this.simulator.getQueries().get(timeslot)) {
+				queryList.add(query);
+				for (Dataset ds : query.getDatasets()){
+					sampleList.add(ds.getSample(error));
+				}
+			}
+			
+			// run the approximation algorithm. 
+			this.approximation(this.simulator.getDataCenters(), sampleList, queryList, error, datacenterNetwork);
+			
+			double totalStorageCostTS = 0d; 
+			double totalUpdateCostTS = 0d; 
+			double totalAccessCostTS = 0d; 
+			double totalProcessCostTS = 0d; 
+			for (DataCenter dc : this.simulator.getDataCenters()) {
+				// storage cost for all placed samples
+				for (Sample admittedSample : dc.getAdmittedSamples()) {
+					totalStorageCostTS += admittedSample.getVolume() * dc.getStorageCost();
+					
+					DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, admittedSample.getParentDataset().getDatacenter(), dc);
+					double updateCost = Double.MAX_VALUE;
+					for (int i = 0; i < shortestPath.getPathEdgeList().size(); i ++){
+						if (0 == i ) 
+							updateCost = 0d;
+						updateCost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(i));
+					}
+					
+					if (Double.MAX_VALUE != updateCost)
+						totalUpdateCostTS += updateCost; 
+					else 
+						System.out.println("ERROR: path should exist!!");
+				}
+				
+				for (Entry<Sample, Set<Query>> entry : dc.getAdmittedQueriesSamples().entrySet()){
+					Sample admittedSample = entry.getKey();
+					
+					for (Query accessQuery : entry.getValue()) {
+						totalProcessCostTS += admittedSample.getVolume() * dc.getProcessingCost();
+						
+						DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, accessQuery.getHomeDataCenter(), dc);
+						double accessCost = Double.MAX_VALUE;
+						for (int i = 0; i < shortestPath.getPathEdgeList().size(); i ++){
+							if (0 == i ) 
+								accessCost = 0d;
+							accessCost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(i));
+						}
+						
+						if (Double.MAX_VALUE != accessCost)
+							totalAccessCostTS += accessCost; 
+						else 
+							System.out.println("ERROR: path should exist!!");
+					}
+				}
+			}
+			
+			this.getAccessCostPerTS().set(timeslot, totalAccessCostTS);
+			this.getStorageCostPerTS().set(timeslot, totalStorageCostTS);
+			this.getUpdateCostPerTS().set(timeslot, totalUpdateCostTS);
+			this.getProcessCostPerTS().set(timeslot, totalProcessCostTS);	
 		}
 	}
 	
@@ -83,10 +138,9 @@ public class ProposedApproximationAlg {
 	 * @return 				the query assignment and sample placement result <DataCenter, <Sample, Set of Queries>>
 	 * 
 	 * */
-	public Map<Node, Map<Sample, Set<Query>>> solveLP(ArrayList<DataCenter> dcList, ArrayList<Sample> sampleList, ArrayList<Query> queryList, double error, 
+	public void approximation(List<DataCenter> dcList, ArrayList<Sample> sampleList, ArrayList<Query> queryList, double error, 
 			SimpleWeightedGraph<Node, InternetLink> datacenterNetwork) {
 
-		Map<Node, Map<Sample, Set<Query>>> queryAssignment = null;
 		
 		List<Query> virtualQueries = new ArrayList<Query>();
 		Map<Query, Integer> vQueryIndexMapInList = new HashMap<Query, Integer>();
@@ -98,6 +152,11 @@ public class ProposedApproximationAlg {
 				vQueryIndexMapInList.put(vQuery, tempIndex);
 				tempIndex ++; 
 			}
+		}
+		
+		Map<Sample, Integer> sampleIndexMapInList = new HashMap<Sample, Integer>();
+		for (int o = 0; o < sampleList.size(); o ++) {
+			sampleIndexMapInList.put(sampleList.get(o), o);
 		}
 		
 		Map<Integer, Integer> vQueryIndexToSampleIndex = new HashMap<Integer, Integer>();
@@ -437,9 +496,61 @@ public class ProposedApproximationAlg {
 		}
 		
 		// now process with new_X and new_Y. 
+		//ArrayList<Query> vQueriesViolatedDelay = new ArrayList<Query>();
+		for (int j = 0; j < virtualQueries.size(); j ++) {
+			Query vQ = virtualQueries.get(j);
+			
+			for (int i = 0; i < dcList.size(); i ++) {
+				DataCenter targetDC = dcList.get(i);
+				if (new_X[j][i] == 1d) {
+					// check the delay. 
+					DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, vQ.getHomeDataCenter(), targetDC);
+					double unitDelay = Double.MAX_VALUE;
+					for (int e = 0; e < shortestPath.getPathEdgeList().size(); e++) {
+						if (0 == e ) 
+							unitDelay = 0d;
+						unitDelay += shortestPath.getPathEdgeList().get(e).getDelay();
+					}
+					Sample sample = vQ.getDatasets().get(0).getSample(error);
+					double delay = unitDelay * sample.getVolume();
+					
+					double newError = error; 
+					while (delay > vQ.getDelayRequirement() && newError < Parameters.errorBounds[Parameters.errorBounds.length - 1] ){
+						for (int eI = 0; eI < Parameters.errorBounds.length - 1; eI ++) {
+							if (newError == Parameters.errorBounds[eI])
+								newError = Parameters.errorBounds[eI + 1];
+						}
+					}
+					
+					// replace the current sample with a sample with a higher error bound. 
+					Sample newSample = vQ.getDatasets().get(0).getSample(newError);
+					int sampleIndex = sampleIndexMapInList.get(sample);
+					sampleIndexMapInList.remove(sample);
+					sampleIndexMapInList.put(newSample, sampleIndex);
+					sampleList.set(sampleIndex, newSample);
+					
+				}
+			}
+		}
 		
-
-		return queryAssignment;
+		// now organize the results for sample placement and query assignments.
+		for (int i = 0; i < dcList.size(); i ++) {
+			DataCenter dc = dcList.get(i);
+			
+			for (int j = 0; j < virtualQueries.size(); j ++) {
+				Query vQ = virtualQueries.get(j);
+				
+				int sampleIndex = vQueryIndexToSampleIndex.get(vQ);
+				
+				if (new_Y[sampleIndex][i] != 1d){
+					System.out.println("A sample for this query should have been placed!!!");
+				} else {
+					dc.admitSample(sampleList.get(sampleIndex), vQ.getParent());
+				}
+			}
+		}
+		
+		//return queryAssignment;
 	}	
 	
 	
