@@ -3,6 +3,7 @@ package algs;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -35,7 +36,7 @@ public class ProposedApproximationAlg {
 	private List<Double> accessCostPerTS = new ArrayList<Double>();
 	private List<Double> processCostPerTS = new ArrayList<Double>();
 	
-	private double optimalLowerBound = -1d; 
+	private double optimalLowerBound = -1d;
 
 	/************* construction function *****************/
 	/** 
@@ -75,7 +76,10 @@ public class ProposedApproximationAlg {
 			}
 			
 			// run the approximation algorithm. 
-			this.approximation(this.simulator.getDataCenters(), sampleList, queryList, error, datacenterNetwork);
+			boolean success = this.approximation(this.simulator.getDataCenters(), sampleList, queryList, error, datacenterNetwork);
+			
+			if (!success)//TODO adjust. 
+				continue;
 			
 			double totalStorageCostTS = 0d; 
 			double totalUpdateCostTS = 0d; 
@@ -127,6 +131,8 @@ public class ProposedApproximationAlg {
 			this.getUpdateCostPerTS().set(timeslot, totalUpdateCostTS);
 			this.getProcessCostPerTS().set(timeslot, totalProcessCostTS);	
 		}
+		
+		
 	}
 	
 	/**
@@ -135,10 +141,10 @@ public class ProposedApproximationAlg {
 	 * @param dcList			list of data centers
 	 * @param sampleList		list of to be placed samples
 	 * @param queryList 		list of to be assigned queries
-	 * @return 				the query assignment and sample placement result <DataCenter, <Sample, Set of Queries>>
+	 * @return 					whether the fractional version of the ILP is successful.
 	 * 
 	 * */
-	public void approximation(List<DataCenter> dcList, ArrayList<Sample> sampleList, ArrayList<Query> queryList, double error, 
+	public boolean approximation(List<DataCenter> dcList, ArrayList<Sample> sampleList, ArrayList<Query> queryList, double error, 
 			SimpleWeightedGraph<Node, InternetLink> datacenterNetwork) {
 
 		
@@ -258,12 +264,16 @@ public class ProposedApproximationAlg {
 					DataCenter targetDC = dcList.get(i);
 					DataCenter homeDC = virtualQueries.get(j).getHomeDataCenter(); 
 					DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, homeDC, targetDC);
-					double cost = Double.MAX_VALUE;
-					for (int e = 0; e < shortestPath.getPathEdgeList().size(); e ++){
-						if (0 == e ) 
-							cost = 0d;
-						cost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(i));
+					double cost = 0d; 
+					if (!homeDC.equals(targetDC)){ 
+						cost = Double.MAX_VALUE;
+						for (int e = 0; e < shortestPath.getPathEdgeList().size(); e ++){
+							if (0 == e ) 
+								cost = 0d;
+							cost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(e));
+						}
 					}
+					
 					objs[virtualQueries.size() * i + j] = cost * virtualQueries.get(j).getDatasets().get(0).getSample(error).getVolume();
 				}
 			}
@@ -275,15 +285,17 @@ public class ProposedApproximationAlg {
 					DataCenter targetDC = dcList.get(i);
 					DataCenter homeDC = (DataCenter) sampleList.get(o).getParentDataset().getDatacenter();
 					
-					DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, homeDC, targetDC);
-					double cost = Double.MAX_VALUE;
-					for (int e = 0; e < shortestPath.getPathEdgeList().size(); e ++){
-						if (0 == e ) 
-							cost = 0d;
-						cost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(e));
+					double cost = 0; 
+					if (!homeDC.equals(targetDC)){
+						DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, homeDC, targetDC);
+						cost = Double.MAX_VALUE;
+						for (int e = 0; e < shortestPath.getPathEdgeList().size(); e ++){
+							if (0 == e ) 
+								cost = 0d;
+							cost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(e));
+						}
 					}
-					
-					objs[virtualQueries.size() * dcList.size() + i * sampleList.size() + o] = (cost * sampleList.get(o).getVolume() + targetDC.getStorageCost() + targetDC.getProcessingCost()); 
+					objs[virtualQueries.size() * dcList.size() + i * sampleList.size() + o] = sampleList.get(o).getVolume() * (cost + targetDC.getStorageCost() + targetDC.getProcessingCost()); 
 				}
 			}
 
@@ -298,6 +310,11 @@ public class ProposedApproximationAlg {
 			this.optimalLowerBound = solver.getObjective();
 			// print solution
 			System.out.println("Lower bound of optimal cost : " + this.optimalLowerBound);
+			
+			if (this.optimalLowerBound == 0d) {// ILP failure. 
+				return false; 
+			}
+			
 			double[] vars = solver.getPtrVariables();
 			// String varString = "Value of var : ";
 			// for (int i = 0; i < vars.length; i++) {
@@ -337,7 +354,7 @@ public class ProposedApproximationAlg {
 			
 		
 		// step (2) dealing with arrays X and Y. 
-		ArrayList<Map<Query, ArrayList<Query>>> clusters = new ArrayList<Map<Query, ArrayList<Query>>>(sampleList.size());
+		ArrayList<Map<Query, Set<Query>>> clusters = new ArrayList<Map<Query, Set<Query>>>(sampleList.size());
 		for (int o = 0; o < sampleList.size(); o ++) {
 			Sample sample = sampleList.get(o);
 			ArrayList<Query> G_o = new ArrayList<Query>();
@@ -348,15 +365,15 @@ public class ProposedApproximationAlg {
 					G_o.add(vQuery);
 					vQuery.setDemand_(0d);
 					vQuery.setDemand(1d);
-					break; 
 				}
 			}
 			// <cluster center, cluster members>
-			Map<Query, ArrayList<Query>> clustersG_o = new HashMap<Query, ArrayList<Query>>();
+			Map<Query, Set<Query>> clustersG_o = new HashMap<Query, Set<Query>>();
 			for (Query vQuery : G_o) {
-				clustersG_o.put(vQuery, new ArrayList<Query>());
+				clustersG_o.put(vQuery, new HashSet<Query>());
 				clustersG_o.get(vQuery).add(vQuery);
 			}
+			
 			Collections.sort(G_o, Query.QueryILPCostComparator);
 			
 			for (int q1I = 0; q1I < G_o.size(); q1I ++ ) {
@@ -370,21 +387,24 @@ public class ProposedApproximationAlg {
 					DataCenter sourceDC = vQuery1.getHomeDataCenter(); 
 					DataCenter targetDC = vQuery2.getHomeDataCenter(); 
 					
-					if (vQuery2.getDemand_() > 0) {
-						DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, sourceDC, targetDC);
-						double cost = Double.MAX_VALUE;
-						for (int e = 0; e < shortestPath.getPathEdgeList().size(); e ++){
-							if (0 == e ) 
-								cost = 0d;
-							cost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(e));
+					if (vQuery2.getDemand_() > 0) {						
+						double cost = 0d;
+						if (!sourceDC.equals(targetDC)) {
+							DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, sourceDC, targetDC);
+							cost = Double.MAX_VALUE;
+							for (int e = 0; e < shortestPath.getPathEdgeList().size(); e ++) {
+								if (0 == e ) 
+									cost = 0d;
+								cost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(e));
+							}
 						}
 					
 						double maxILPCost = (vQuery1.getILPcost() > vQuery2.getILPcost())? vQuery1.getILPcost(): vQuery2.getILPcost();
 						if (cost < 4 * maxILPCost) {
-							foundK = true; 
+							foundK = true;
 							vQuery2.setDemand_(vQuery2.getDemand_() + vQuery1.getDemand());
 							if (null == clustersG_o.get(vQuery2))
-								clustersG_o.put(vQuery2, new ArrayList<Query>());
+								clustersG_o.put(vQuery2, new HashSet<Query>());
 							
 							if (null != clustersG_o.get(vQuery1)) {
 								for (Query toBeMovedQuery : clustersG_o.get(vQuery1)){
@@ -398,8 +418,12 @@ public class ProposedApproximationAlg {
 					}
 				}
 				
-				if (!foundK)
+				if (!foundK) {
 					vQuery1.setDemand_(vQuery1.getDemand());
+					if (null == clustersG_o.get(vQuery1))
+						clustersG_o.put(vQuery1, new HashSet<Query>());
+					clustersG_o.get(vQuery1).add(vQuery1);
+				}
 			}
 			clusters.add(clustersG_o);
 		}
@@ -408,10 +432,11 @@ public class ProposedApproximationAlg {
 		double [][] new_Y = new double[sampleList.size()][dcList.size()];// [samples][data centers]
 		
 		for (int o = 0; o < sampleList.size(); o ++) {
-			Sample sample = sampleList.get(o);
-			Map<Query, ArrayList<Query>> clustersG_o = clusters.get(o);
 			
-			for (Entry<Query, ArrayList<Query>> entry : clustersG_o.entrySet()) {
+			Sample sample = sampleList.get(o);
+			Map<Query, Set<Query>> clustersG_o = clusters.get(o);
+			
+			for (Entry<Query, Set<Query>> entry : clustersG_o.entrySet()) {
 				
 				ArrayList<DataCenter> fractionallyAssignedDCs = new ArrayList<DataCenter>();
 				ArrayList<DataCenter> fractionallyAssignedDCs_ = new ArrayList<DataCenter>();
@@ -421,19 +446,23 @@ public class ProposedApproximationAlg {
 				Map<DataCenter, Integer> dcToIndex = new HashMap<DataCenter, Integer>();
 				for (int i = 0; i < dcList.size(); i ++) {
 					DataCenter dc = dcList.get(i);
+					dcToIndex.put(dc, i);
 					
 					if (X[j][i] > 0) {
 						totalAssigned += X[j][i];
 						fractionallyAssignedDCs.add(dc);
-						dcToIndex.put(dc, i);
-						DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, entry.getKey().getHomeDataCenter(), dc);
-						double cost = Double.MAX_VALUE;
-						for (int e = 0; e < shortestPath.getPathEdgeList().size(); e++) {
-							if (0 == e ) 
-								cost = 0d;
-							cost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(e));
+						
+						double cost = 0d; 
+						if(!entry.getKey().getHomeDataCenter().equals(dc)) {
+							DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, entry.getKey().getHomeDataCenter(), dc);
+							cost = Double.MAX_VALUE;
+							for (int e = 0; e < shortestPath.getPathEdgeList().size(); e++) {
+								if (0 == e ) 
+									cost = 0d;
+								cost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(e));
+							}
+							cost *= sample.getVolume();
 						}
-						cost *= sample.getVolume();
 						
 						if (cost <= 2 * entry.getKey().getILPcost()) {
 							fractionallyAssignedDCs_.add(dc);
@@ -449,7 +478,7 @@ public class ProposedApproximationAlg {
 				
 				//double totalDemandGroup = entry.getKey().getDemand_();
 				ArrayList<DataCenter> fullyAssignedDCs = new ArrayList<DataCenter>();
-				if (totalToBeAssigned < fractionallyAssignedDCs_.size()) {
+				if (totalToBeAssigned <= fractionallyAssignedDCs_.size()) {
 					for (int mm = 0; mm < totalToBeAssigned; mm ++){
 						new_Y[o][dcToIndex.get(fractionallyAssignedDCs_.get(mm))] = 1d;  
 						//new_X[j][dcToIndex.get(fractionallyAssignedDCs_.get(mm))] = 1d; 
@@ -468,24 +497,27 @@ public class ProposedApproximationAlg {
 					}
 				}
 				
-				ArrayList<Query> queriesToBeAssigned = entry.getValue();
+				Set<Query> queriesToBeAssigned = entry.getValue();
 				for (Query toBeAssignedQ : queriesToBeAssigned) {
 					
 					//if (toBeAssignedQ.equals(entry.getKey())) continue;
 					
 					double minCost = Double.MAX_VALUE;
 					DataCenter minCostDC = null; 
-					for (DataCenter dc : fullyAssignedDCs){
-						DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, toBeAssignedQ.getHomeDataCenter(), dc);
-						double cost = Double.MAX_VALUE;
-						for (int e = 0; e < shortestPath.getPathEdgeList().size(); e++) {
-							if (0 == e ) 
-								cost = 0d;
-							cost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(e));
+					for (DataCenter dc : fullyAssignedDCs) {
+						double cost = 0d; 
+						if (!toBeAssignedQ.getHomeDataCenter().equals(dc)) {
+							DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, toBeAssignedQ.getHomeDataCenter(), dc);
+							cost = Double.MAX_VALUE;
+							for (int e = 0; e < shortestPath.getPathEdgeList().size(); e++) {
+								if (0 == e ) 
+									cost = 0d;
+								cost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(e));
+							}
+							cost *= sample.getVolume();
 						}
-						cost *= sample.getVolume();
 						
-						if (minCost > cost){
+						if (minCost > cost) {
 							minCost = cost; 
 							minCostDC = dc; 
 						}
@@ -504,13 +536,17 @@ public class ProposedApproximationAlg {
 				DataCenter targetDC = dcList.get(i);
 				if (new_X[j][i] == 1d) {
 					// check the delay. 
-					DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, vQ.getHomeDataCenter(), targetDC);
-					double unitDelay = Double.MAX_VALUE;
-					for (int e = 0; e < shortestPath.getPathEdgeList().size(); e++) {
-						if (0 == e ) 
-							unitDelay = 0d;
-						unitDelay += shortestPath.getPathEdgeList().get(e).getDelay();
+					double unitDelay = 0d; 
+					if (!vQ.getHomeDataCenter().equals(targetDC)) {
+						DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, vQ.getHomeDataCenter(), targetDC);
+						unitDelay = Double.MAX_VALUE;
+						for (int e = 0; e < shortestPath.getPathEdgeList().size(); e++) {
+							if (0 == e ) 
+								unitDelay = 0d;
+							unitDelay += shortestPath.getPathEdgeList().get(e).getDelay();
+						}
 					}
+					
 					Sample sample = vQ.getDatasets().get(0).getSample(error);
 					double delay = unitDelay * sample.getVolume();
 					
@@ -523,12 +559,13 @@ public class ProposedApproximationAlg {
 					}
 					
 					// replace the current sample with a sample with a higher error bound. 
-					Sample newSample = vQ.getDatasets().get(0).getSample(newError);
-					int sampleIndex = sampleIndexMapInList.get(sample);
-					sampleIndexMapInList.remove(sample);
-					sampleIndexMapInList.put(newSample, sampleIndex);
-					sampleList.set(sampleIndex, newSample);
-					
+					if (newError != error) {
+						Sample newSample = vQ.getDatasets().get(0).getSample(newError);
+						int sampleIndex = sampleIndexMapInList.get(sample);
+						sampleIndexMapInList.remove(sample);
+						sampleIndexMapInList.put(newSample, sampleIndex);
+						sampleList.set(sampleIndex, newSample);
+					}
 				}
 			}
 		}
@@ -536,21 +573,21 @@ public class ProposedApproximationAlg {
 		// now organize the results for sample placement and query assignments.
 		for (int i = 0; i < dcList.size(); i ++) {
 			DataCenter dc = dcList.get(i);
-			
 			for (int j = 0; j < virtualQueries.size(); j ++) {
-				Query vQ = virtualQueries.get(j);
+				if (new_X[j][i] == 1d) {
+					Query vQ = virtualQueries.get(j);
+					int sampleIndex = vQueryIndexToSampleIndex.get(j);
 				
-				int sampleIndex = vQueryIndexToSampleIndex.get(vQ);
-				
-				if (new_Y[sampleIndex][i] != 1d){
-					System.out.println("A sample for this query should have been placed!!!");
-				} else {
-					dc.admitSample(sampleList.get(sampleIndex), vQ.getParent());
+					if (new_Y[sampleIndex][i] != 1d){
+						System.out.println("A sample for this query should have been placed!!!");
+					} else {
+						dc.admitSample(sampleList.get(sampleIndex), vQ.getParent());
+					}
 				}
 			}
 		}
 		
-		//return queryAssignment;
+		return true; 
 	}	
 	
 	

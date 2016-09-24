@@ -34,7 +34,8 @@ public class SamplePlacementSimulator {
 	}
 
 	public static void main(String[] s) {
-		performanceHeuristic();
+		//performanceHeuristic();
+		performanceApproximation();
 	}
 	
 	public static void performanceHeuristic() {
