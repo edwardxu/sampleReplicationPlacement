@@ -174,7 +174,6 @@ public class SamplePlacementSimulator {
 		for (Node node : this.datacenterNetwork.vertexSet()) {
 
 			if (node instanceof DataCenter) {
-
 				double processingCost = RanNum.getRandomDoubleRange(Parameters.processCostUnitDataMax,
 						Parameters.processCostUnitDataMin);
 				double storageCost = RanNum.getRandomDoubleRange(Parameters.storageCostUnitDataMax,

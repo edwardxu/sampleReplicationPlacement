@@ -59,8 +59,10 @@ public class ProposedApproximationAlg {
 		setEdgeWeightDataCenterNetwork(datacenterNetwork);
 
 		for (int timeslot = 0; timeslot < Parameters.numOfTSs; timeslot++) {
-			if (timeslot > 0)
+			if (timeslot > 0) {
 				this.simulator.modifyCosts();// double check this. 
+				this.resetDataCenterNetwork(datacenterNetwork);
+			}
 			
 			// the algorithm is divided into steps
 			// step (1), solve the ILP
@@ -76,52 +78,51 @@ public class ProposedApproximationAlg {
 			}
 			
 			// run the approximation algorithm. 
-			boolean success = this.approximation(this.simulator.getDataCenters(), sampleList, queryList, error, datacenterNetwork);
-			
-			if (!success)//TODO adjust. 
-				continue;
-			
+			boolean success = this.approximation(this.simulator.getDataCenters(), sampleList, queryList, error, datacenterNetwork);	
 			double totalStorageCostTS = 0d; 
 			double totalUpdateCostTS = 0d; 
 			double totalAccessCostTS = 0d; 
 			double totalProcessCostTS = 0d; 
-			for (DataCenter dc : this.simulator.getDataCenters()) {
-				// storage cost for all placed samples
-				for (Sample admittedSample : dc.getAdmittedSamples()) {
-					totalStorageCostTS += admittedSample.getVolume() * dc.getStorageCost();
-					
-					DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, admittedSample.getParentDataset().getDatacenter(), dc);
-					double updateCost = Double.MAX_VALUE;
-					for (int i = 0; i < shortestPath.getPathEdgeList().size(); i ++){
-						if (0 == i ) 
-							updateCost = 0d;
-						updateCost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(i));
-					}
-					
-					if (Double.MAX_VALUE != updateCost)
-						totalUpdateCostTS += updateCost; 
-					else 
-						System.out.println("ERROR: path should exist!!");
-				}
-				
-				for (Entry<Sample, Set<Query>> entry : dc.getAdmittedQueriesSamples().entrySet()){
-					Sample admittedSample = entry.getKey();
-					
-					for (Query accessQuery : entry.getValue()) {
-						totalProcessCostTS += admittedSample.getVolume() * dc.getProcessingCost();
+			
+			if (success) {
+				for (DataCenter dc : this.simulator.getDataCenters()) {
+					// storage cost for all placed samples
+					for (Sample admittedSample : dc.getAdmittedSamples()) {
+						totalStorageCostTS += admittedSample.getVolume() * dc.getStorageCost();
 						
-						DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, accessQuery.getHomeDataCenter(), dc);
-						double accessCost = Double.MAX_VALUE;
+						DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, admittedSample.getParentDataset().getDatacenter(), dc);
+						double updateCost = Double.MAX_VALUE;
 						for (int i = 0; i < shortestPath.getPathEdgeList().size(); i ++){
 							if (0 == i ) 
-								accessCost = 0d;
-							accessCost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(i));
+								updateCost = 0d;
+							updateCost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(i));
 						}
 						
-						if (Double.MAX_VALUE != accessCost)
-							totalAccessCostTS += accessCost; 
+						if (Double.MAX_VALUE != updateCost)
+							totalUpdateCostTS += updateCost; 
 						else 
 							System.out.println("ERROR: path should exist!!");
+					}
+				
+					for (Entry<Sample, Set<Query>> entry : dc.getAdmittedQueriesSamples().entrySet()){
+						Sample admittedSample = entry.getKey();
+					
+						for (Query accessQuery : entry.getValue()) {
+							totalProcessCostTS += admittedSample.getVolume() * dc.getProcessingCost();
+							
+							DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, accessQuery.getHomeDataCenter(), dc);
+							double accessCost = Double.MAX_VALUE;
+							for (int i = 0; i < shortestPath.getPathEdgeList().size(); i ++){
+								if (0 == i ) 
+									accessCost = 0d;
+								accessCost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(i));
+							}
+						
+							if (Double.MAX_VALUE != accessCost)
+								totalAccessCostTS += accessCost; 
+							else 
+								System.out.println("ERROR: path should exist!!");
+						}
 					}
 				}
 			}
@@ -131,8 +132,6 @@ public class ProposedApproximationAlg {
 			this.getUpdateCostPerTS().set(timeslot, totalUpdateCostTS);
 			this.getProcessCostPerTS().set(timeslot, totalProcessCostTS);	
 		}
-		
-		
 	}
 	
 	/**
@@ -228,7 +227,7 @@ public class ProposedApproximationAlg {
 				for (int o = 0; o < sampleList.size(); o ++) {
 					constraint[virtualQueries.size() * dcList.size() + i * sampleList.size() + o] = sampleList.get(o).getVolume() * Parameters.computingAllocatedToUnitData; 
 				}
-				solver.addConstraint(constraint, LpSolve.LE, dcList.get(i).getComputingCapacity());
+				solver.addConstraint(constraint, LpSolve.LE, dcList.get(i).getAvailableComputing());
 			}
 			
 			/**
@@ -265,7 +264,7 @@ public class ProposedApproximationAlg {
 					DataCenter homeDC = virtualQueries.get(j).getHomeDataCenter(); 
 					DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, homeDC, targetDC);
 					double cost = 0d; 
-					if (!homeDC.equals(targetDC)){ 
+					if (!homeDC.equals(targetDC)) {
 						cost = Double.MAX_VALUE;
 						for (int e = 0; e < shortestPath.getPathEdgeList().size(); e ++){
 							if (0 == e ) 
@@ -590,6 +589,16 @@ public class ProposedApproximationAlg {
 		return true; 
 	}	
 	
+	private void resetDataCenterNetwork(SimpleWeightedGraph<Node, InternetLink> dcNetwork) {
+		for (Node node : dcNetwork.vertexSet()) {
+			if (node instanceof DataCenter) {
+				((DataCenter) node).reset();
+			}
+		}
+		for (InternetLink il : dcNetwork.edgeSet()) {
+			il.clear();
+		}
+	}
 	
 	private void setEdgeWeightDataCenterNetwork(SimpleWeightedGraph<Node, InternetLink> datacenterNetwork) {
 		for (InternetLink il : datacenterNetwork.edgeSet()) {

@@ -54,8 +54,10 @@ public class ProposedHeuristicAlg {
 		setEdgeWeightDataCenterNetwork(datacenterNetwork);
 
 		for (int timeslot = 0; timeslot < Parameters.numOfTSs; timeslot++) {
-			if (timeslot > 0)
-				this.simulator.modifyCosts();// double check this. 
+			if (timeslot > 0) {
+				this.simulator.modifyCosts();// double check this.
+				this.resetDataCenterNetwork(datacenterNetwork);
+			}
 
 			List<Commodity> commodities = new ArrayList<Commodity>();
 			List<Commodity> rejectedCommodities = new ArrayList<Commodity>();
@@ -421,7 +423,7 @@ public class ProposedHeuristicAlg {
 	private void resetDataCenterNetwork(SimpleWeightedGraph<Node, InternetLink> dcNetwork) {
 		for (Node node : dcNetwork.vertexSet()) {
 			if (node instanceof DataCenter) {
-				((DataCenter) node).clear();
+				((DataCenter) node).reset();
 			}
 		}
 		for (InternetLink il : dcNetwork.edgeSet()) {

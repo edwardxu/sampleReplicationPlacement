@@ -14,7 +14,6 @@ import simulation.Parameters;
 
 public class DataCenter extends Node {
 	
-	/****************static properties*****************/
 	private double computingCapacity = -1d;
 	private double availComputing = -1d;
 	private Set<Sample> admittedSamples = null;
@@ -51,7 +50,7 @@ public class DataCenter extends Node {
 
 	/*************functions*************/
 	
-	public void clear(){
+	public void reset(){
 		this.getAdmittedSamples().clear();
 		this.getAdmittedQueriesSamples().clear();
 		
