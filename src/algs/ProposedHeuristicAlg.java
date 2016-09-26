@@ -27,24 +27,25 @@ public class ProposedHeuristicAlg {
 	/************* parameters *****************/
 	private SamplePlacementSimulator simulator = null;
 
-	private List<Integer> admittedNumOfQueriesPerTS = new ArrayList<Integer>();
+	// the number of admitted for different trials, where each trial has a different set of queries. 
+	private List<Integer> admittedNumOfQueriesTrials = new ArrayList<Integer>();
 
-	private List<Double> costPerTS = new ArrayList<Double>();
-	private List<Double> storageCostPerTS = new ArrayList<Double>();
-	private List<Double> updateCostPerTS = new ArrayList<Double>();
-	private List<Double> accessCostPerTS = new ArrayList<Double>();
-	private List<Double> processCostPerTS = new ArrayList<Double>();
+	private List<Double> costTrials = new ArrayList<Double>();
+	private List<Double> storageCostTrials = new ArrayList<Double>();
+	private List<Double> updateCostTrials = new ArrayList<Double>();
+	private List<Double> accessCostTrials = new ArrayList<Double>();
+	private List<Double> processCostTrials = new ArrayList<Double>();
 
 	/************* construction function *****************/
 	public ProposedHeuristicAlg(SamplePlacementSimulator simulator) {
 		this.simulator = simulator;
-		for (int i = 0; i < Parameters.numOfTSs; i++) {
-			this.admittedNumOfQueriesPerTS.add(i, 0);
-			this.costPerTS.add(i, 0.0);
-			this.storageCostPerTS.add(i, 0.0);
-			this.updateCostPerTS.add(i, 0.0);
-			this.accessCostPerTS.add(i, 0.0);
-			this.processCostPerTS.add(i, 0.0);
+		for (int i = 0; i < Parameters.numOfTrials; i++) {
+			this.admittedNumOfQueriesTrials.add(i, 0);
+			this.costTrials.add(i, 0.0);
+			this.storageCostTrials.add(i, 0.0);
+			this.updateCostTrials.add(i, 0.0);
+			this.accessCostTrials.add(i, 0.0);
+			this.processCostTrials.add(i, 0.0);
 		}
 	}
 
@@ -53,8 +54,8 @@ public class ProposedHeuristicAlg {
 		SimpleWeightedGraph<Node, InternetLink> datacenterNetwork = this.simulator.getDatacenterNetwork();
 		setEdgeWeightDataCenterNetwork(datacenterNetwork);
 
-		for (int timeslot = 0; timeslot < Parameters.numOfTSs; timeslot++) {
-			if (timeslot > 0) {
+		for (int trial = 0; trial < Parameters.numOfTrials; trial++) {
+			if (trial > 0) {
 				this.simulator.modifyCosts();// double check this.
 				this.resetDataCenterNetwork(datacenterNetwork);
 			}
@@ -62,7 +63,7 @@ public class ProposedHeuristicAlg {
 			List<Commodity> commodities = new ArrayList<Commodity>();
 			List<Commodity> rejectedCommodities = new ArrayList<Commodity>();
 			int errorIndexForUnAdmitted = 0;
-			SimpleWeightedGraph<Node, MinCostFlowEdge> flowNet = this.initializeFlowNetwork(datacenterNetwork, commodities, timeslot, Parameters.errorBounds[errorIndexForUnAdmitted]);
+			SimpleWeightedGraph<Node, MinCostFlowEdge> flowNet = this.initializeFlowNetwork(datacenterNetwork, commodities, trial, Parameters.errorBounds[errorIndexForUnAdmitted]);
 			boolean increaseAdmittedErrors = false;
 			
 			while(!commodities.isEmpty()) {
@@ -157,56 +158,61 @@ public class ProposedHeuristicAlg {
 				}
 			}// end while
 			
-			double totalStorageCostTS = 0d; 
-			double totalUpdateCostTS = 0d; 
-			double totalAccessCostTS = 0d; 
-			double totalProcessCostTS = 0d; 
+			double totalStorageCostTrial = 0d; 
+			double totalUpdateCostTrial = 0d; 
+			double totalAccessCostTrial = 0d; 
+			double totalProcessCostTrial = 0d;
 			for (DataCenter dc : this.simulator.getDataCenters()) {
 				// storage cost for all placed samples
 				for (Sample admittedSample : dc.getAdmittedSamples()) {
-					totalStorageCostTS += admittedSample.getVolume() * dc.getStorageCost();
-					
-					DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, admittedSample.getParentDataset().getDatacenter(), dc);
-					double updateCost = Double.MAX_VALUE;
-					for (int i = 0; i < shortestPath.getPathEdgeList().size(); i ++){
-						if (0 == i ) 
-							updateCost = 0d;
-						updateCost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(i));
+					totalStorageCostTrial += admittedSample.getVolume() * dc.getStorageCost();
+					totalProcessCostTrial += admittedSample.getVolume() * dc.getProcessingCost();
+
+					double updateCost = 0d; 
+					if (!admittedSample.getParentDataset().getDatacenter().equals(dc)) {
+						DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, admittedSample.getParentDataset().getDatacenter(), dc);
+						updateCost = Double.MAX_VALUE;
+						for (int i = 0; i < shortestPath.getPathEdgeList().size(); i ++){
+							if (0 == i ) 
+								updateCost = 0d;
+							updateCost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(i));
+						}
 					}
 					
 					if (Double.MAX_VALUE != updateCost)
-						totalUpdateCostTS += updateCost; 
+						totalUpdateCostTrial += updateCost * admittedSample.getVolume(); 
 					else 
 						System.out.println("ERROR: path should exist!!");
 				}
 				
-				for (Entry<Sample, Set<Query>> entry : dc.getAdmittedQueriesSamples().entrySet()){
+				for (Entry<Sample, Set<Query>> entry : dc.getAdmittedQueriesSamples().entrySet()) {
 					Sample admittedSample = entry.getKey();
 					
 					for (Query accessQuery : entry.getValue()) {
-						totalProcessCostTS += admittedSample.getVolume() * dc.getProcessingCost();
-						
-						DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, accessQuery.getHomeDataCenter(), dc);
-						double accessCost = Double.MAX_VALUE;
-						for (int i = 0; i < shortestPath.getPathEdgeList().size(); i ++){
-							if (0 == i ) 
-								accessCost = 0d;
-							accessCost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(i));
+						double accessCost = 0d;
+						if (!accessQuery.getHomeDataCenter().equals(dc)){
+							DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, accessQuery.getHomeDataCenter(), dc);
+							accessCost = Double.MAX_VALUE;
+							for (int i = 0; i < shortestPath.getPathEdgeList().size(); i ++){
+								if (0 == i ) 
+									accessCost = 0d;
+								accessCost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(i));
+							}
 						}
 						
 						if (Double.MAX_VALUE != accessCost)
-							totalAccessCostTS += accessCost; 
+							totalAccessCostTrial += accessCost * admittedSample.getVolume(); 
 						else 
 							System.out.println("ERROR: path should exist!!");
 					}
 				}
 			}
-			
-			this.getAccessCostPerTS().set(timeslot, totalAccessCostTS);
-			this.getStorageCostPerTS().set(timeslot, totalStorageCostTS);
-			this.getUpdateCostPerTS().set(timeslot, totalUpdateCostTS);
-			this.getProcessCostPerTS().set(timeslot, totalProcessCostTS);
-		}// end for time slot;
+			this.getCostTrials().set(trial, totalAccessCostTrial + totalStorageCostTrial + totalUpdateCostTrial + totalProcessCostTrial);
+			this.getAccessCostTrials().set(trial, totalAccessCostTrial);
+			this.getStorageCostTrials().set(trial, totalStorageCostTrial);
+			this.getUpdateCostTrials().set(trial, totalUpdateCostTrial);
+			this.getProcessCostTrials().set(trial, totalProcessCostTrial);
+		}// end for trials;
 	}
 	
 	private void updateEdgeCostAndCapacities(SimpleWeightedGraph<Node, InternetLink> dcNetwork, SimpleWeightedGraph<Node, MinCostFlowEdge> flowNetwork, double error) {
@@ -352,7 +358,7 @@ public class ProposedHeuristicAlg {
 	private SimpleWeightedGraph<Node, MinCostFlowEdge> initializeFlowNetwork(
 			SimpleWeightedGraph<Node, InternetLink> dcNetwork,
 			List<Commodity> commodities,
-			int timeslot, 
+			int trial, 
 			double error
 			) {
 
@@ -363,7 +369,7 @@ public class ProposedHeuristicAlg {
 		flowNetwork.addVertex(virtualSink);
 
 		List<DataCenter> dcNodes = simulator.getDataCenters();//get all datacenter nodes of the datacenter network
-		List<Query> queriesAccessData = simulator.getQueries().get(timeslot);//get all queries at time slot "timeslot"
+		List<Query> queriesAccessData = simulator.getQueries().get(trial);//get all queries at time slot "timeslot"
 		List<DemandNode> demandNodes = new ArrayList<DemandNode>();//create demand nodes and add all demand nodes into the flow network
 		
 		for(Query query : queriesAccessData) {
@@ -440,52 +446,52 @@ public class ProposedHeuristicAlg {
 		this.simulator = simulator;
 	}
 
-	public List<Integer> getAdmittedNumOfQueriesPerTS() {
-		return admittedNumOfQueriesPerTS;
+	public List<Integer> getAdmittedNumOfQueriesTrials() {
+		return admittedNumOfQueriesTrials;
 	}
 
-	public void setAdmittedNumOfQueriesPerTS(List<Integer> admittedNumOfQueriesPerTS) {
-		this.admittedNumOfQueriesPerTS = admittedNumOfQueriesPerTS;
+	public void setAdmittedNumOfQueriesTrials(List<Integer> admittedNumOfQueriesPerTS) {
+		this.admittedNumOfQueriesTrials = admittedNumOfQueriesPerTS;
 	}
 
-	public List<Double> getCostPerTS() {
-		return costPerTS;
+	public List<Double> getCostTrials() {
+		return costTrials;
 	}
 
-	public void setCostPerTS(List<Double> costPerTS) {
-		this.costPerTS = costPerTS;
+	public void setCostTrials(List<Double> costPerTS) {
+		this.costTrials = costPerTS;
 	}
 
-	public List<Double> getStorageCostPerTS() {
-		return storageCostPerTS;
+	public List<Double> getStorageCostTrials() {
+		return storageCostTrials;
 	}
 
-	public void setStorageCostPerTS(List<Double> storageCostPerTS) {
-		this.storageCostPerTS = storageCostPerTS;
+	public void setStorageCostTrials(List<Double> storageCostPerTS) {
+		this.storageCostTrials = storageCostPerTS;
 	}
 
-	public List<Double> getUpdateCostPerTS() {
-		return updateCostPerTS;
+	public List<Double> getUpdateCostTrials() {
+		return updateCostTrials;
 	}
 
-	public void setUpdateCostPerTS(List<Double> updateCostPerTS) {
-		this.updateCostPerTS = updateCostPerTS;
+	public void setUpdateCostTrials(List<Double> updateCostPerTS) {
+		this.updateCostTrials = updateCostPerTS;
 	}
 
-	public List<Double> getAccessCostPerTS() {
-		return accessCostPerTS;
+	public List<Double> getAccessCostTrials() {
+		return accessCostTrials;
 	}
 
-	public void setAccessCostPerTS(List<Double> accessCostPerTS) {
-		this.accessCostPerTS = accessCostPerTS;
+	public void setAccessCostTrials(List<Double> accessCostPerTS) {
+		this.accessCostTrials = accessCostPerTS;
 	}
 
-	public List<Double> getProcessCostPerTS() {
-		return processCostPerTS;
+	public List<Double> getProcessCostTrials() {
+		return processCostTrials;
 	}
 
-	public void setProcessCostPerTS(List<Double> processCostPerTS) {
-		this.processCostPerTS = processCostPerTS;
+	public void setProcessCostTrials(List<Double> processCostPerTS) {
+		this.processCostTrials = processCostPerTS;
 	}
 
 }

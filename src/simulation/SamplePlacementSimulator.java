@@ -25,6 +25,7 @@ public class SamplePlacementSimulator {
 	public static IdAllocator idAllocator = new IdAllocator();
 	
 	private List<DataCenter> dataCenterList = new ArrayList<DataCenter>();
+	// <trial, list of datasets>
 	private Map<Integer, List<Dataset>> datasets = new HashMap<Integer, List<Dataset>>();
 	private Map<Integer, List<Sample>> samples = new HashMap<Integer, List<Sample>>();
 	private Map<Integer, List<Query>> queries = new HashMap<Integer,List<Query>>();
@@ -34,40 +35,202 @@ public class SamplePlacementSimulator {
 	}
 
 	public static void main(String[] s) {
-		//performanceHeuristic();
-		performanceApproximation();
+		performanceHeuristic();
+		//performanceApproximation();
 	}
 	
 	public static void performanceHeuristic() {
 		
-		for(int round = 0; round < Parameters.roundNum; round ++) {
-			String networkIndexPostFix = "";
-			if (round > 0) 
-				networkIndexPostFix = "-" + round;
+		int numOfAlgs = 1; 
+		//int [] network_sizes = {20, 30, 40, 50, 100, 150, 200}; 
+		int [] network_sizes = {20, 30};
+		double [][] aveCost = new double [numOfAlgs][network_sizes.length];
+		double [][] aveStorageCost = new double [numOfAlgs][network_sizes.length];
+		double [][] aveUpdateCost = new double [numOfAlgs][network_sizes.length];
+		double [][] aveAccessCost = new double [numOfAlgs][network_sizes.length];
+		double [][] aveProcessCost = new double [numOfAlgs][network_sizes.length];
+		
+		for (int i = 0; i < network_sizes.length; i ++) {
+			int network_size = network_sizes[i];
 			
-			SamplePlacementSimulator simulator = new SamplePlacementSimulator();
-			simulator.InitializeDataCenterNetwork(simulator.getDatacenterNetwork(), networkIndexPostFix);//get the data center network (cloud network)			
-			simulator.InitializeDatasetsAndSamples();
-			simulator.InitializeQueries();
-			ProposedHeuristicAlg heuAlg = new ProposedHeuristicAlg(simulator);
-			heuAlg.run();
+			for(int round = 0; round < Parameters.roundNum; round ++) {// different network toplolgies.
+				String networkIndexPostFix = "";
+				if (round > 0) 
+					networkIndexPostFix = "-" + round;
+				
+				SamplePlacementSimulator simulator = new SamplePlacementSimulator();
+				simulator.InitializeDataCenterNetwork(simulator.getDatacenterNetwork(), networkIndexPostFix, network_size);//get the data center network (cloud network)			
+				simulator.InitializeDatasetsAndSamples();
+				simulator.InitializeQueries();
+				ProposedHeuristicAlg heuAlg = new ProposedHeuristicAlg(simulator);
+				heuAlg.run();
+				
+				double averageCostT = 0d;
+				double averageStorageCostT = 0d; 
+				double averageUpdateCostT = 0d; 
+				double averageAccessCostT = 0d;
+				double averageProcessCostT = 0d;
+				for (int t = 0; t < Parameters.numOfTrials; t++) {
+					averageCostT += (heuAlg.getCostTrials().get(t) / Parameters.numOfTrials);
+					averageStorageCostT += (heuAlg.getStorageCostTrials().get(t) / Parameters.numOfTrials);
+					averageUpdateCostT += (heuAlg.getUpdateCostTrials().get(t) / Parameters.numOfTrials);
+					averageAccessCostT += (heuAlg.getAccessCostTrials().get(t) / Parameters.numOfTrials);
+					averageProcessCostT += (heuAlg.getProcessCostTrials().get(t) / Parameters.numOfTrials);
+				}
+				
+				aveCost[0][i] += (averageCostT / Parameters.roundNum);
+				aveStorageCost[0][i] += (averageStorageCostT / Parameters.roundNum);
+				aveUpdateCost[0][i] += (averageUpdateCostT / Parameters.roundNum);
+				aveAccessCost[0][i] += (averageAccessCostT / Parameters.roundNum);
+				aveProcessCost[0][i] += (averageProcessCostT / Parameters.roundNum);
+			}
+		}
+		
+		System.out.println("total costs");
+		for (int i = 0; i < network_sizes.length; i ++) {
+			int network_size = network_sizes[i];
+			String out = "";
+			for (int j = 0; j < numOfAlgs; j ++){
+				out += aveCost[j][i] + " ";
+			}
+			System.out.println("" + network_size + " " + out);
+		}
+		
+		System.out.println("storage costs");
+		for (int i = 0; i < network_sizes.length; i ++) {
+			int network_size = network_sizes[i];
+			String out = "";
+			for (int j = 0; j < numOfAlgs; j ++){
+				out += aveStorageCost[j][i] + " ";
+			}
+			System.out.println("" + network_size + " " + out);
+		}
+		
+		System.out.println("update costs");
+		for (int i = 0; i < network_sizes.length; i ++) {
+			int network_size = network_sizes[i];
+			String out = "";
+			for (int j = 0; j < numOfAlgs; j ++){
+				out += aveUpdateCost[j][i] + " ";
+			}
+			System.out.println("" + network_size + " " + out);
+		}
+		
+		System.out.println("access costs");
+		for (int i = 0; i < network_sizes.length; i ++) {
+			int network_size = network_sizes[i];
+			String out = "";
+			for (int j = 0; j < numOfAlgs; j ++){
+				out += aveAccessCost[j][i] + " ";
+			}
+			System.out.println("" + network_size + " " + out);
+		}
+		
+		System.out.println("process costs");
+		for (int i = 0; i < network_sizes.length; i ++) {
+			int network_size = network_sizes[i];
+			String out = "";
+			for (int j = 0; j < numOfAlgs; j ++){
+				out += aveProcessCost[j][i] + " ";
+			}
+			System.out.println("" + network_size + " " + out);
 		}
 		
 	}
 	
 	public static void performanceApproximation() {
+		int numOfAlgs = 1; 
+		int [] network_sizes = {20, 30, 40, 50}; // 100, 150, 200
+		double [][] aveCost = new double [numOfAlgs][network_sizes.length];
+		double [][] aveStorageCost = new double [numOfAlgs][network_sizes.length];
+		double [][] aveUpdateCost = new double [numOfAlgs][network_sizes.length];
+		double [][] aveAccessCost = new double [numOfAlgs][network_sizes.length];
+		double [][] aveProcessCost = new double [numOfAlgs][network_sizes.length];
 		
-		for(int round = 0; round < Parameters.roundNum; round ++) {
-			String networkIndexPostFix = "";
-			if (round > 0) 
-				networkIndexPostFix = "-" + round;
+		for (int i = 0; i < network_sizes.length; i ++) {
+			int network_size = network_sizes[i];
 			
-			SamplePlacementSimulator simulator = new SamplePlacementSimulator();
-			simulator.InitializeDataCenterNetwork(simulator.getDatacenterNetwork(), networkIndexPostFix);//get the data center network (cloud network)			
-			simulator.InitializeDatasetsAndSamples();
-			simulator.InitializeQueries();
-			ProposedApproximationAlg approAlg = new ProposedApproximationAlg(simulator);
-			approAlg.run();
+			for(int round = 0; round < Parameters.roundNum; round ++) {// different network toplolgies.
+				String networkIndexPostFix = "";
+				if (round > 0) 
+					networkIndexPostFix = "-" + round;
+			
+				SamplePlacementSimulator simulator = new SamplePlacementSimulator();
+				simulator.InitializeDataCenterNetwork(simulator.getDatacenterNetwork(), networkIndexPostFix, network_size);//get the data center network (cloud network)			
+				simulator.InitializeDatasetsAndSamples();
+				simulator.InitializeQueries();
+				ProposedApproximationAlg approAlg = new ProposedApproximationAlg(simulator);
+				approAlg.run();
+				
+				double averageCostT = 0d;
+				double averageStorageCostT = 0d; 
+				double averageUpdateCostT = 0d; 
+				double averageAccessCostT = 0d;
+				double averageProcessCostT = 0d;
+				for (int t = 0; t < Parameters.numOfTrials; t++) {
+					averageCostT += (approAlg.getCostTrials().get(t) / Parameters.numOfTrials);
+					averageStorageCostT += (approAlg.getStorageCostTrials().get(t) / Parameters.numOfTrials);
+					averageUpdateCostT += (approAlg.getUpdateCostTrials().get(t) / Parameters.numOfTrials);
+					averageAccessCostT += (approAlg.getAccessCostTrials().get(t) / Parameters.numOfTrials);
+					averageProcessCostT += (approAlg.getProcessCostTrials().get(t) / Parameters.numOfTrials);
+				}
+				
+				aveCost[0][i] += (averageCostT / Parameters.roundNum);
+				aveStorageCost[0][i] += (averageStorageCostT / Parameters.roundNum);
+				aveUpdateCost[0][i] += (averageUpdateCostT / Parameters.roundNum);
+				aveAccessCost[0][i] += (averageAccessCostT / Parameters.roundNum);
+				aveProcessCost[0][i] += (averageProcessCostT / Parameters.roundNum);
+			}
+		}
+		
+		System.out.println("total costs");
+		for (int i = 0; i < network_sizes.length; i ++) {
+			int network_size = network_sizes[i];
+			String out = "";
+			for (int j = 0; j < numOfAlgs; j ++){
+				out += aveCost[j][i] + " ";
+			}
+			System.out.println("" + network_size + " " + out);
+		}
+		
+		System.out.println("storage costs");
+		for (int i = 0; i < network_sizes.length; i ++) {
+			int network_size = network_sizes[i];
+			String out = "";
+			for (int j = 0; j < numOfAlgs; j ++){
+				out += aveStorageCost[j][i] + " ";
+			}
+			System.out.println("" + network_size + " " + out);
+		}
+		
+		System.out.println("update costs");
+		for (int i = 0; i < network_sizes.length; i ++) {
+			int network_size = network_sizes[i];
+			String out = "";
+			for (int j = 0; j < numOfAlgs; j ++){
+				out += aveUpdateCost[j][i] + " ";
+			}
+			System.out.println("" + network_size + " " + out);
+		}
+		
+		System.out.println("access costs");
+		for (int i = 0; i < network_sizes.length; i ++) {
+			int network_size = network_sizes[i];
+			String out = "";
+			for (int j = 0; j < numOfAlgs; j ++){
+				out += aveAccessCost[j][i] + " ";
+			}
+			System.out.println("" + network_size + " " + out);
+		}
+		
+		System.out.println("process costs");
+		for (int i = 0; i < network_sizes.length; i ++) {
+			int network_size = network_sizes[i];
+			String out = "";
+			for (int j = 0; j < numOfAlgs; j ++){
+				out += aveProcessCost[j][i] + " ";
+			}
+			System.out.println("" + network_size + " " + out);
 		}
 	}
 
@@ -78,7 +241,7 @@ public class SamplePlacementSimulator {
 	 ************************************/
 	
 	public SimpleWeightedGraph<Node, InternetLink> InitializeDataCenterNetwork(
-			SimpleWeightedGraph<Node, InternetLink> dcNet, String networkIndexPostfix) {
+			SimpleWeightedGraph<Node, InternetLink> dcNet, String networkIndexPostfix, int numOfDCs) {
 
 		if (null == dcNet) {
 
@@ -88,7 +251,7 @@ public class SamplePlacementSimulator {
 				datacenterNetwork = new SimpleWeightedGraph<Node, InternetLink>(InternetLink.class);
 				NetworkGenerator<Node, InternetLink> networkGenerator = new NetworkGenerator<Node, InternetLink>();
 
-				networkGenerator.setSize(Parameters.numOfDataCenters);
+				networkGenerator.setSize(numOfDCs);
 				networkGenerator.setGenerateType(0);// generate data center
 													// networks
 				networkGenerator.setNetworkIndexPostFix(networkIndexPostfix);
@@ -128,7 +291,7 @@ public class SamplePlacementSimulator {
 	
 	public Map<Integer, List<Dataset>> InitializeDatasetsAndSamples() {
 		if (this.datasets.isEmpty()){
-			for(int i = 0; i < Parameters.numOfTSs; i ++) {
+			for(int i = 0; i < Parameters.numOfTrials; i ++) {
 				int numOfDatasetsPerTS = RanNum.getRandomIntRange(Parameters.maxNumOfDatasetsPerTS, Parameters.minNumOfDatasetsPerTS);
 				List<Dataset> dss = new ArrayList<Dataset>();
 				List<Sample> sams = new ArrayList<Sample>();
@@ -153,7 +316,7 @@ public class SamplePlacementSimulator {
 		
 		//String numOfQueries = "";
 		if (this.queries.isEmpty()){// generate queries
-			for(int i = 0; i < Parameters.numOfTSs; i ++) {
+			for(int i = 0; i < Parameters.numOfTrials; i ++) {
 				
 				int numOfQueriesPerTS = RanNum.getRandomIntRange(Parameters.maxNumOfQueriesPerTS, Parameters.minNumOfQueriesPerTS);
 				//numOfQueries += numOfQueriesPerTS + " ";
@@ -190,10 +353,10 @@ public class SamplePlacementSimulator {
 		}
 	}
 	
-	public List<Sample> samplesOfDataset(int timeslot, Dataset ds){
+	public List<Sample> samplesOfDataset(int trial, Dataset ds){
 		
 		List<Sample> foundSamples = new ArrayList<Sample>();
-		for (Sample sample : this.getSamples().get(timeslot)){
+		for (Sample sample : this.getSamples().get(trial)){
 			if (sample.getParentDataset().equals(ds))
 				foundSamples.add(sample);
 		}
