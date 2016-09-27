@@ -5,7 +5,7 @@ public class Parameters {
 	/**************overall settings****************/
 	final public static int printScale = 10;
 	
-	final public static int numOfTSs = 101;
+	final public static int numOfTrials = 10;
 	final public static int roundNum = 5;
 	
 	/**************data center and links****************/
@@ -35,7 +35,7 @@ public class Parameters {
 	//public static int numOfSamplesEachDataset = 3;
 	
 	/**************queries****************/
-	public static int maxNumOfQueriesPerTS = 20; // to be reset
+	public static int maxNumOfQueriesPerTS = 50; // to be reset
 	public static int minNumOfQueriesPerTS = 10; // to be reset
 	
 	final public static int queryRateMax = 10;// to be reset
@@ -47,8 +47,8 @@ public class Parameters {
 	final public static double queryDelayRequirementMax = 10; // ms
 	final public static double queryDelayRequirementMin = 100;// ms
 	
-	final public static int lifeCycleMax = (int) ((int) numOfTSs * 0.2); 
-	final public static int lifeCycleMin = (int) ((int) numOfTSs * 0.02);
+	//final public static int lifeCycleMax = (int) ((int) numOfTrials * 0.2); 
+	//final public static int lifeCycleMin = (int) ((int) numOfTrials * 0.02);
 	
 	/****************general cost settings ***********/
 	// TODO please double check these cost settings. 

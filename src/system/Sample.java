@@ -3,14 +3,13 @@ package system;
 import graph.Node;
 import simulation.Parameters;
 import simulation.SamplePlacementSimulator;
-import utils.RanNum;
 
 public class Sample extends Node {
 	
 	private double error;
 	private double volume;
 	private Dataset parentDataset;
-	private double lifeCycle;//how many time slots that this sample can live in the system
+	//private double lifeCycle;//how many time slots that this sample can live in the system
 	private DataCenter toBePlaced = null;//the destination where this sample will finally be placed
 
 	public Sample(Dataset parent, int errorIndex) {
@@ -19,7 +18,7 @@ public class Sample extends Node {
 		//int choice = RanNum.getRandomIntRange(Parameters.errorBounds.length - 1, 0);		
 		this.error = Parameters.errorBounds[errorIndex];
 		this.volume = parentDataset.getVolume() * (1 - this.error);
-		this.lifeCycle = RanNum.getRandomIntRange(Parameters.lifeCycleMax, Parameters.lifeCycleMin);
+		//this.lifeCycle = RanNum.getRandomIntRange(Parameters.lifeCycleMax, Parameters.lifeCycleMin);
 	}
 	
 	//get the computing demand of processing this sample
@@ -36,16 +35,6 @@ public class Sample extends Node {
 
 	public void setError(double error) {
 		this.error = error;
-	}
-
-
-	public double getLifeCycle() {
-		return lifeCycle;
-	}
-
-
-	public void setLifeCycle(double lifeCycle) {
-		this.lifeCycle = lifeCycle;
 	}
 
 	public double getVolume() {
