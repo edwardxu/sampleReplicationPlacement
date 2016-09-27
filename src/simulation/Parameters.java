@@ -24,8 +24,8 @@ public class Parameters {
 	
 	/**************data sets and their samples****************/
 	//the size of a dataset
-	final public static double sizePerDatasetMax = 8;//GB
-	final public static double sizePerDatasetMin = 4;//GB
+	final public static double sizePerDatasetMax = 20;//GB
+	final public static double sizePerDatasetMin = 10;//GB
 	
 	final public static double [] errorBounds = {0.05, 0.1, 0.15, 0.2, 0.25};
 	
@@ -33,10 +33,9 @@ public class Parameters {
 	public static int minNumOfDatasetsPerTS = 50;// to be reset
 	
 	//public static int numOfSamplesEachDataset = 3;
-	
 	/**************queries****************/
-	public static int maxNumOfQueriesPerTS = 50; // to be reset
-	public static int minNumOfQueriesPerTS = 10; // to be reset
+	public static int maxNumOfQueriesPerTS = 250; // to be reset
+	public static int minNumOfQueriesPerTS = 50; // to be reset
 	
 	final public static int queryRateMax = 10;// to be reset
 	final public static int queryRateMin = 1;// to be reset
@@ -58,7 +57,7 @@ public class Parameters {
 	final public static double processCostUnitDataMax = 0.22;// $ per GB data // c_p(v_i) 
 	final public static double processCostUnitDataMin = 0.15;// $ per GB data // c_p(v_i)
 	
-	final public static double computingAllocatedToUnitData = 10;//GHz $ per GB //r_c
+	final public static double computingAllocatedToUnitData = 15;//10 GHz $ per GB //r_c
 	
 	final public static double bandwidthAllocatedToUnitData = 0.065;//Gbps $ per GB //r_t
 	
