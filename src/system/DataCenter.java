@@ -2,6 +2,7 @@ package system;
 
 import graph.NodeInitialParameters;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -25,6 +26,7 @@ public class DataCenter extends Node {
 	// used when this data center is a virtual data center. 
 	private DataCenter parent = null;
 //	private Set<InternetLink> tree = null; 
+	private double distToQueryHomeDataCenter = 0d;
 	
 	/***********Initialization functions***********/
 	public DataCenter(NodeInitialParameters ni) {
@@ -56,6 +58,7 @@ public class DataCenter extends Node {
 		
 		this.availComputing = this.getComputingCapacity();
 		this.parent = null;
+		this.distToQueryHomeDataCenter = 0d; 
 	}
 	
 	public void admitSample(Sample sample, Query query) {
@@ -94,6 +97,17 @@ public class DataCenter extends Node {
 		this.getAdmittedSamples().clear();
 		this.getAdmittedQueriesSamples().clear();
 	}
+	
+	public static Comparator<DataCenter> DistToQueryComparator = new Comparator<DataCenter>() {
+		public int compare(DataCenter dc1, DataCenter dc2) {
+			Double dist1 = dc1.getDistToQueryHomeDataCenter();
+			Double dist2 = dc2.getDistToQueryHomeDataCenter();
+			//ascending order
+			return dist1.compareTo(dist2);
+			//descending order
+			//return ilpCost2.compareTo(ilpCost1);
+		}
+	};
 	
 	/*************getter and setter*************/
 	public double getComputingCapacity() {
@@ -139,5 +153,13 @@ public class DataCenter extends Node {
 
 	public void setAdmittedQueriesSamples(Map<Sample, Set<Query>> admittedQueriesSamples) {
 		this.admittedQueriesSamples = admittedQueriesSamples;
+	}
+
+	public double getDistToQueryHomeDataCenter() {
+		return distToQueryHomeDataCenter;
+	}
+
+	public void setDistToQueryHomeDataCenter(double distToQueryHomeDataCenter) {
+		this.distToQueryHomeDataCenter = distToQueryHomeDataCenter;
 	}
 }
