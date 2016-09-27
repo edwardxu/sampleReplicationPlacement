@@ -2,8 +2,10 @@ package simulation;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.jgrapht.alg.ConnectivityInspector;
 import org.jgrapht.graph.SimpleWeightedGraph;
@@ -35,8 +37,149 @@ public class SamplePlacementSimulator {
 	}
 
 	public static void main(String[] s) {
-		performanceHeuristic();
+		//performanceHeuristic();
 		//performanceApproximation();
+		performance();
+	}
+	
+	public static void performance() {
+		
+		int numOfAlgs = 2; 
+		//int [] network_sizes = {20, 30, 40, 50, 100, 150, 200}; 
+		int [] network_sizes = {20, 30};
+		double [][] aveCost = new double [numOfAlgs][network_sizes.length];
+		double [][] aveStorageCost = new double [numOfAlgs][network_sizes.length];
+		double [][] aveUpdateCost = new double [numOfAlgs][network_sizes.length];
+		double [][] aveAccessCost = new double [numOfAlgs][network_sizes.length];
+		double [][] aveProcessCost = new double [numOfAlgs][network_sizes.length];
+		
+		for (int i = 0; i < network_sizes.length; i ++) {
+			int network_size = network_sizes[i];
+			
+			for(int round = 0; round < Parameters.roundNum; round ++) {// different network toplolgies.
+				String networkIndexPostFix = "";
+				if (round > 0) 
+					networkIndexPostFix = "-" + round;
+				
+				SamplePlacementSimulator simulator = new SamplePlacementSimulator();
+				simulator.InitializeDataCenterNetwork(simulator.getDatacenterNetwork(), networkIndexPostFix, network_size);//get the data center network (cloud network)			
+				simulator.InitializeDatasetsAndSamples();
+				simulator.InitializeQueries();
+				ProposedHeuristicAlg heuAlg = new ProposedHeuristicAlg(simulator);
+				heuAlg.run();
+				
+				double averageCostT = 0d;
+				double averageStorageCostT = 0d; 
+				double averageUpdateCostT = 0d; 
+				double averageAccessCostT = 0d;
+				double averageProcessCostT = 0d;
+				for (int t = 0; t < Parameters.numOfTrials; t++) {
+					averageCostT += (heuAlg.getCostTrials().get(t) / Parameters.numOfTrials);
+					averageStorageCostT += (heuAlg.getStorageCostTrials().get(t) / Parameters.numOfTrials);
+					averageUpdateCostT += (heuAlg.getUpdateCostTrials().get(t) / Parameters.numOfTrials);
+					averageAccessCostT += (heuAlg.getAccessCostTrials().get(t) / Parameters.numOfTrials);
+					averageProcessCostT += (heuAlg.getProcessCostTrials().get(t) / Parameters.numOfTrials);
+				}
+				
+				aveCost[0][i] += (averageCostT / Parameters.roundNum);
+				aveStorageCost[0][i] += (averageStorageCostT / Parameters.roundNum);
+				aveUpdateCost[0][i] += (averageUpdateCostT / Parameters.roundNum);
+				aveAccessCost[0][i] += (averageAccessCostT / Parameters.roundNum);
+				aveProcessCost[0][i] += (averageProcessCostT / Parameters.roundNum);
+				
+				for (Node node : simulator.getDatacenterNetwork().vertexSet()) {
+					if (node instanceof DataCenter) {
+						((DataCenter) node).reset();
+					}
+				}
+				for (InternetLink il : simulator.getDatacenterNetwork().edgeSet()) {
+					il.clear();
+				}
+				
+				ProposedApproximationAlg approAlg = new ProposedApproximationAlg(simulator);
+				approAlg.run();
+				
+				averageCostT = 0d;
+				averageStorageCostT = 0d;
+				averageUpdateCostT = 0d;
+				averageAccessCostT = 0d;
+				averageProcessCostT = 0d;
+				int numOfInvalidTrials = 0;				
+				for (int t = 0; t < Parameters.numOfTrials; t++) {
+					
+					if (approAlg.getCostTrials().get(t) == 0d) numOfInvalidTrials ++; 
+						
+					averageCostT += (approAlg.getCostTrials().get(t));
+					averageStorageCostT += (approAlg.getStorageCostTrials().get(t));
+					averageUpdateCostT += (approAlg.getUpdateCostTrials().get(t));
+					averageAccessCostT += (approAlg.getAccessCostTrials().get(t));
+					averageProcessCostT += (approAlg.getProcessCostTrials().get(t));
+				}
+				
+				averageCostT /= (Parameters.numOfTrials - numOfInvalidTrials);
+				averageStorageCostT /= (Parameters.numOfTrials - numOfInvalidTrials); 
+				averageUpdateCostT /= (Parameters.numOfTrials - numOfInvalidTrials); 
+				averageAccessCostT /= (Parameters.numOfTrials - numOfInvalidTrials); 
+				averageProcessCostT /= (Parameters.numOfTrials - numOfInvalidTrials); 
+				
+				aveCost[1][i] += (averageCostT / Parameters.roundNum);
+				aveStorageCost[1][i] += (averageStorageCostT / Parameters.roundNum);
+				aveUpdateCost[1][i] += (averageUpdateCostT / Parameters.roundNum);
+				aveAccessCost[1][i] += (averageAccessCostT / Parameters.roundNum);
+				aveProcessCost[1][i] += (averageProcessCostT / Parameters.roundNum);
+			}
+		}
+		
+		System.out.println("total costs");
+		for (int i = 0; i < network_sizes.length; i ++) {
+			int network_size = network_sizes[i];
+			String out = "";
+			for (int j = 0; j < numOfAlgs; j ++){
+				out += aveCost[j][i] + " ";
+			}
+			System.out.println("" + network_size + " " + out);
+		}
+		
+		System.out.println("storage costs");
+		for (int i = 0; i < network_sizes.length; i ++) {
+			int network_size = network_sizes[i];
+			String out = "";
+			for (int j = 0; j < numOfAlgs; j ++){
+				out += aveStorageCost[j][i] + " ";
+			}
+			System.out.println("" + network_size + " " + out);
+		}
+		
+		System.out.println("update costs");
+		for (int i = 0; i < network_sizes.length; i ++) {
+			int network_size = network_sizes[i];
+			String out = "";
+			for (int j = 0; j < numOfAlgs; j ++){
+				out += aveUpdateCost[j][i] + " ";
+			}
+			System.out.println("" + network_size + " " + out);
+		}
+		
+		System.out.println("access costs");
+		for (int i = 0; i < network_sizes.length; i ++) {
+			int network_size = network_sizes[i];
+			String out = "";
+			for (int j = 0; j < numOfAlgs; j ++){
+				out += aveAccessCost[j][i] + " ";
+			}
+			System.out.println("" + network_size + " " + out);
+		}
+		
+		System.out.println("process costs");
+		for (int i = 0; i < network_sizes.length; i ++) {
+			int network_size = network_sizes[i];
+			String out = "";
+			for (int j = 0; j < numOfAlgs; j ++){
+				out += aveProcessCost[j][i] + " ";
+			}
+			System.out.println("" + network_size + " " + out);
+		}
+		
 	}
 	
 	public static void performanceHeuristic() {
@@ -140,7 +283,7 @@ public class SamplePlacementSimulator {
 	
 	public static void performanceApproximation() {
 		int numOfAlgs = 1; 
-		int [] network_sizes = {20, 30, 40, 50}; // 100, 150, 200
+		int [] network_sizes = {20, 30}; // 100, 150, 200
 		double [][] aveCost = new double [numOfAlgs][network_sizes.length];
 		double [][] aveStorageCost = new double [numOfAlgs][network_sizes.length];
 		double [][] aveUpdateCost = new double [numOfAlgs][network_sizes.length];
@@ -167,13 +310,23 @@ public class SamplePlacementSimulator {
 				double averageUpdateCostT = 0d; 
 				double averageAccessCostT = 0d;
 				double averageProcessCostT = 0d;
+				int numOfInvalidTrials = 0;				
 				for (int t = 0; t < Parameters.numOfTrials; t++) {
-					averageCostT += (approAlg.getCostTrials().get(t) / Parameters.numOfTrials);
-					averageStorageCostT += (approAlg.getStorageCostTrials().get(t) / Parameters.numOfTrials);
-					averageUpdateCostT += (approAlg.getUpdateCostTrials().get(t) / Parameters.numOfTrials);
-					averageAccessCostT += (approAlg.getAccessCostTrials().get(t) / Parameters.numOfTrials);
-					averageProcessCostT += (approAlg.getProcessCostTrials().get(t) / Parameters.numOfTrials);
+					
+					if (approAlg.getCostTrials().get(t) == 0d) numOfInvalidTrials ++; 
+						
+					averageCostT += (approAlg.getCostTrials().get(t));
+					averageStorageCostT += (approAlg.getStorageCostTrials().get(t));
+					averageUpdateCostT += (approAlg.getUpdateCostTrials().get(t));
+					averageAccessCostT += (approAlg.getAccessCostTrials().get(t));
+					averageProcessCostT += (approAlg.getProcessCostTrials().get(t));
 				}
+				
+				averageCostT /= (Parameters.numOfTrials - numOfInvalidTrials);
+				averageStorageCostT /= (Parameters.numOfTrials - numOfInvalidTrials); 
+				averageUpdateCostT /= (Parameters.numOfTrials - numOfInvalidTrials); 
+				averageAccessCostT /= (Parameters.numOfTrials - numOfInvalidTrials); 
+				averageProcessCostT /= (Parameters.numOfTrials - numOfInvalidTrials); 
 				
 				aveCost[0][i] += (averageCostT / Parameters.roundNum);
 				aveStorageCost[0][i] += (averageStorageCostT / Parameters.roundNum);
@@ -290,7 +443,8 @@ public class SamplePlacementSimulator {
 	}
 	
 	public Map<Integer, List<Dataset>> InitializeDatasetsAndSamples() {
-		if (this.datasets.isEmpty()){
+		
+		if (this.datasets.isEmpty()) {
 			for(int i = 0; i < Parameters.numOfTrials; i ++) {
 				int numOfDatasetsPerTS = RanNum.getRandomIntRange(Parameters.maxNumOfDatasetsPerTS, Parameters.minNumOfDatasetsPerTS);
 				List<Dataset> dss = new ArrayList<Dataset>();
@@ -321,11 +475,42 @@ public class SamplePlacementSimulator {
 				int numOfQueriesPerTS = RanNum.getRandomIntRange(Parameters.maxNumOfQueriesPerTS, Parameters.minNumOfQueriesPerTS);
 				//numOfQueries += numOfQueriesPerTS + " ";
 				List<Query> qus = new ArrayList<Query>();
-				for(int j = 0; j < numOfQueriesPerTS; j ++){
+				Set<Sample> samplesToBePlaced = new HashSet<Sample>();
+				double targetError = Parameters.errorBounds[1];
+				
+				for(int j = 0; j < numOfQueriesPerTS; j ++) {
 					Query quer = new Query(this.getDataCenters(), this.getDatasets().get(i));
 					qus.add(quer);
+					
+					for (Dataset ds : quer.getDatasets()) {
+						samplesToBePlaced.add(ds.getSample(targetError));
+					}
 				}
 				queries.put(i, qus);
+				
+				// make sure the total computing resource is more than that required by all queries. 
+				double totalComputingDemand = 0d;
+				for (Sample sample : samplesToBePlaced) {
+					totalComputingDemand += sample.getVolume() * Parameters.computingAllocatedToUnitData; 
+				}
+				
+				double totalComputingAvailable = 0d; 
+				for (DataCenter dc : this.dataCenterList){
+					totalComputingAvailable += dc.getAvailableComputing();
+				}
+				
+				if (totalComputingDemand > totalComputingAvailable){
+					double ratio = totalComputingAvailable / (totalComputingDemand + 10d);
+					
+					System.out.println("scalling down the size of all datasets by ratio: " + ratio);
+
+					for (Dataset ds : this.datasets.get(i)) {
+						ds.setVolume(ds.getVolume() * ratio);
+						for (Sample sam : ds.getSamples()){
+							sam.setVolume(sam.getVolume() * ratio);
+						}
+					}
+				}
 			}
 			//System.out.println(numOfQueries);
 		}

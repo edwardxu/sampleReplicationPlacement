@@ -67,19 +67,26 @@ public class ProposedApproximationAlg {
 			
 			// the algorithm is divided into steps
 			// step (1), solve the ILP
-			double error = Parameters.errorBounds[0]; 
-			ArrayList<Sample> sampleList = new ArrayList<Sample>();
-			ArrayList<Query> queryList = new ArrayList<Query>();
-			
-			for (Query query : this.simulator.getQueries().get(trial)) {
-				queryList.add(query);
-				for (Dataset ds : query.getDatasets()){
-					sampleList.add(ds.getSample(error));
+			int currErrorIndex = -1; 
+			boolean success = false;
+			if ((!success)&&(currErrorIndex < Parameters.errorBounds.length )){
+				currErrorIndex ++; 
+				double error = Parameters.errorBounds[currErrorIndex];
+				
+				ArrayList<Sample> sampleList = new ArrayList<Sample>();
+				ArrayList<Query> queryList = new ArrayList<Query>();
+				
+				for (Query query : this.simulator.getQueries().get(trial)) {
+					queryList.add(query);
+					for (Dataset ds : query.getDatasets()) {
+						sampleList.add(ds.getSample(error));
+					}
 				}
+				
+				// run the approximation algorithm. 
+				success = this.approximation(this.simulator.getDataCenters(), sampleList, queryList, error, datacenterNetwork);
 			}
 			
-			// run the approximation algorithm. 
-			boolean success = this.approximation(this.simulator.getDataCenters(), sampleList, queryList, error, datacenterNetwork);	
 			double totalStorageCostTrial = 0d; 
 			double totalUpdateCostTrial = 0d; 
 			double totalAccessCostTrial = 0d;
@@ -192,7 +199,7 @@ public class ProposedApproximationAlg {
 		try {
 			/**
 			 * constrains structure: query * datacenters + sample * datacenters
-			 * example: location1 for query1, location 1 for query 2, location 2 for query1, location 2 for query 2, 			-------X
+			 * example: location 1 for query1, location 1 for query 2, location 2 for query1, location 2 for query 2, 			-------X
 			 * 			location 1 for sample 1, location 1 for sample 2, location 2 for sample 1, location 2 for sample 2. 	-------Y
 			 * 
 			 * indexing rules: query j, datacenter i, sample o
@@ -209,7 +216,7 @@ public class ProposedApproximationAlg {
 				for (int i = 0; i < dcList.size(); i ++) {
 					constraint[virtualQueries.size() * i + j] = 1d; 
 				}
-				solver.addConstraint(constraint, LpSolve.GE, 1.0);
+				solver.addConstraint(constraint, LpSolve.GE, 1d);
 			}
 			
 			/**
@@ -318,11 +325,11 @@ public class ProposedApproximationAlg {
 			// print solution
 			System.out.println("Lower bound of optimal cost : " + this.optimalLowerBound);
 			
-			if (this.optimalLowerBound == 0d) {// ILP failure. 
-				return false; 
+			if (this.optimalLowerBound == 0d || this.optimalLowerBound == 1e+30) {// ILP failure. 
+				return false;
 			}
 			
-			double[] vars = solver.getPtrVariables();
+			double [] vars = solver.getPtrVariables();
 			// String varString = "Value of var : ";
 			// for (int i = 0; i < vars.length; i++) {
 			// varString += vars[i] + " ";
@@ -332,14 +339,14 @@ public class ProposedApproximationAlg {
 
 			// delete the problem and free memory
 			
-			for (int i = 0; i < dcList.size(); i ++) {
-				for (int j = 0; j < virtualQueries.size(); j ++) {
+			for (int j = 0; j < virtualQueries.size(); j ++) {
+				for (int i = 0; i < dcList.size(); i ++) {
 					X[j][i] = vars[i * virtualQueries.size() + j];
 				}
 			}
 			
-			for (int i = 0; i < dcList.size(); i ++) {
-				for (int o = 0; o < sampleList.size(); o ++) {
+			for (int o = 0; o < sampleList.size(); o ++) {
+				for (int i = 0; i < dcList.size(); i ++) {
 					Y[o][i] = vars[virtualQueries.size() * dcList.size() + i * sampleList.size() + o];
 				}
 			}
@@ -447,6 +454,8 @@ public class ProposedApproximationAlg {
 				
 				ArrayList<DataCenter> fractionallyAssignedDCs = new ArrayList<DataCenter>();
 				ArrayList<DataCenter> fractionallyAssignedDCs_ = new ArrayList<DataCenter>();
+				ArrayList<DataCenter> fractionallyAssignedDCs__ = new ArrayList<DataCenter>();
+
 				double totalAssigned = 0d; 
 				int j = vQueryIndexMapInList.get(entry.getKey());
 				
@@ -456,7 +465,12 @@ public class ProposedApproximationAlg {
 					dcToIndex.put(dc, i);
 					
 					if (X[j][i] > 0) {
-						totalAssigned += X[j][i];
+						
+						if (X[j][i] < 1d) 
+							totalAssigned += X[j][i];
+						else 
+							totalAssigned += 1d;
+						
 						fractionallyAssignedDCs.add(dc);
 						
 						double cost = 0d; 
@@ -473,20 +487,28 @@ public class ProposedApproximationAlg {
 						
 						if (cost <= 2 * entry.getKey().getILPcost()) {
 							fractionallyAssignedDCs_.add(dc);
+						} else {
+							fractionallyAssignedDCs__.add(dc);
 						}
 					}
 				}
 				
+				if (totalAssigned == 0d)
+					return false; 
+				
 				int totalToBeAssigned = 0;
 				if (totalAssigned > 1d)
 					totalToBeAssigned = (int) totalAssigned;
-				else
+				else if (totalAssigned > fractionallyAssignedDCs.size() ){
+					System.out.println(totalAssigned + " v.s. " + dcList.size());
+					totalToBeAssigned = fractionallyAssignedDCs.size();
+				} else 
 					totalToBeAssigned = 1; 
 				
 				//double totalDemandGroup = entry.getKey().getDemand_();
 				ArrayList<DataCenter> fullyAssignedDCs = new ArrayList<DataCenter>();
 				if (totalToBeAssigned <= fractionallyAssignedDCs_.size()) {
-					for (int mm = 0; mm < totalToBeAssigned; mm ++){
+					for (int mm = 0; mm < totalToBeAssigned; mm ++) {
 						new_Y[o][dcToIndex.get(fractionallyAssignedDCs_.get(mm))] = 1d;  
 						//new_X[j][dcToIndex.get(fractionallyAssignedDCs_.get(mm))] = 1d; 
 						fullyAssignedDCs.add(fractionallyAssignedDCs_.get(mm));
@@ -497,10 +519,10 @@ public class ProposedApproximationAlg {
 						//new_X[j][dcToIndex.get(fractionallyAssignedDCs_.get(mm))] = 1d; 
 						fullyAssignedDCs.add(fractionallyAssignedDCs_.get(mm));
 					}
-					for (int mm = 0; mm < totalToBeAssigned - fractionallyAssignedDCs_.size(); mm ++){
-						new_Y[o][dcToIndex.get(fractionallyAssignedDCs.get(mm))] = 1d;
+					for (int mm = 0; mm < totalToBeAssigned - fractionallyAssignedDCs_.size(); mm ++) {
+						new_Y[o][dcToIndex.get(fractionallyAssignedDCs__.get(mm))] = 1d;
 						//new_X[j][dcToIndex.get(fractionallyAssignedDCs.get(mm))] = 1d; 
-						fullyAssignedDCs.add(fractionallyAssignedDCs.get(mm));
+						fullyAssignedDCs.add(fractionallyAssignedDCs__.get(mm));
 					}
 				}
 				
@@ -560,16 +582,19 @@ public class ProposedApproximationAlg {
 					double newError = error; 
 					while (delay > vQ.getDelayRequirement() && newError < Parameters.errorBounds[Parameters.errorBounds.length - 1] ){
 						for (int eI = 0; eI < Parameters.errorBounds.length - 1; eI ++) {
-							if (newError == Parameters.errorBounds[eI])
+							if (newError == Parameters.errorBounds[eI]) {
 								newError = Parameters.errorBounds[eI + 1];
+								break; 
+							}
 						}
+						delay = unitDelay * vQ.getDatasets().get(0).getSample(newError).getVolume();
 					}
 					
 					// replace the current sample with a sample with a higher error bound. 
 					if (newError != error) {
 						Sample newSample = vQ.getDatasets().get(0).getSample(newError);
 						int sampleIndex = sampleIndexMapInList.get(sample);
-						sampleIndexMapInList.remove(sample);
+						//sampleIndexMapInList.remove(sample);
 						sampleIndexMapInList.put(newSample, sampleIndex);
 						sampleList.set(sampleIndex, newSample);
 					}
