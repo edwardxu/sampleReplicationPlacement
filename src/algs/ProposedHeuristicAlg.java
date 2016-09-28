@@ -1,9 +1,11 @@
 package algs;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -36,6 +38,8 @@ public class ProposedHeuristicAlg {
 	private List<Double> accessCostTrials = new ArrayList<Double>();
 	private List<Double> processCostTrials = new ArrayList<Double>();
 
+	private List<Double> averageErrorTrials = new ArrayList<Double>();
+	
 	/************* construction function *****************/
 	public ProposedHeuristicAlg(SamplePlacementSimulator simulator) {
 		this.simulator = simulator;
@@ -46,6 +50,7 @@ public class ProposedHeuristicAlg {
 			this.updateCostTrials.add(i, 0.0);
 			this.accessCostTrials.add(i, 0.0);
 			this.processCostTrials.add(i, 0.0);
+			this.averageErrorTrials.add(i, 0.0);
 		}
 	}
 
@@ -158,10 +163,11 @@ public class ProposedHeuristicAlg {
 				}
 			}// end while
 			
-			double totalStorageCostTrial = 0d; 
-			double totalUpdateCostTrial = 0d; 
-			double totalAccessCostTrial = 0d; 
+			double totalStorageCostTrial = 0d;
+			double totalUpdateCostTrial = 0d;
+			double totalAccessCostTrial = 0d;
 			double totalProcessCostTrial = 0d;
+			
 			for (DataCenter dc : this.simulator.getDataCenters()) {
 				// storage cost for all placed samples
 				for (Sample admittedSample : dc.getAdmittedSamples()) {
@@ -190,7 +196,7 @@ public class ProposedHeuristicAlg {
 					
 					for (Query accessQuery : entry.getValue()) {
 						double accessCost = 0d;
-						if (!accessQuery.getHomeDataCenter().equals(dc)){
+						if (!accessQuery.getHomeDataCenter().equals(dc)) {
 							DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, accessQuery.getHomeDataCenter(), dc);
 							accessCost = Double.MAX_VALUE;
 							for (int i = 0; i < shortestPath.getPathEdgeList().size(); i ++){
@@ -212,6 +218,34 @@ public class ProposedHeuristicAlg {
 			this.getStorageCostTrials().set(trial, totalStorageCostTrial);
 			this.getUpdateCostTrials().set(trial, totalUpdateCostTrial);
 			this.getProcessCostTrials().set(trial, totalProcessCostTrial);
+			
+			Map<Query, Set<Sample>> queryPlacedSamples = new HashMap<Query, Set<Sample>>();
+			for (DataCenter dc : this.simulator.getDataCenters()) {
+				for (Entry<Sample, Set<Query>> entry : dc.getAdmittedQueriesSamples().entrySet()){
+					for (Query query : entry.getValue()) {
+						if (null == queryPlacedSamples.get(query))
+							queryPlacedSamples.put(query, new HashSet<Sample>());
+						queryPlacedSamples.get(query).add(entry.getKey());					
+					}
+				}
+			}
+			
+			double averageError = 0d; 
+			for (Entry<Query, Set<Sample>> entry : queryPlacedSamples.entrySet()) {
+				
+				double totalSampleVolume = 0d; 
+				for (Sample sam : entry.getValue())
+					totalSampleVolume += sam.getVolume();
+				
+				double errorQ = 0d; 
+				for (Sample sam : entry.getValue())
+					errorQ += (sam.getError() * sam.getVolume() / totalSampleVolume);
+				
+				averageError += errorQ;
+			}
+			averageError /= queryPlacedSamples.size(); 
+			
+			this.getAverageErrorTrials().set(trial, averageError);
 		}// end for trials;
 	}
 	
@@ -492,6 +526,14 @@ public class ProposedHeuristicAlg {
 
 	public void setProcessCostTrials(List<Double> processCostPerTS) {
 		this.processCostTrials = processCostPerTS;
+	}
+
+	public List<Double> getAverageErrorTrials() {
+		return averageErrorTrials;
+	}
+
+	public void setAverageErrorTrials(List<Double> averageErrorTrials) {
+		this.averageErrorTrials = averageErrorTrials;
 	}
 
 }

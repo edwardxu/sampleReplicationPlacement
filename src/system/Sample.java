@@ -28,6 +28,10 @@ public class Sample extends Node {
 		return dems; 
 	}
 	
+	public void reset(){
+		this.toBePlaced = null;
+	}
+	
 	//getter and setter
 	public double getError() {
 		return error;

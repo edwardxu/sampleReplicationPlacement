@@ -38,6 +38,8 @@ public class ProposedApproximationAlg {
 	private List<Double> accessCostTrials = new ArrayList<Double>();
 	private List<Double> processCostTrials = new ArrayList<Double>();
 	
+	private List<Double> averageErrorTrials = new ArrayList<Double>();
+	
 	private double optimalLowerBound = -1d;
 
 	/************* construction function *****************/
@@ -54,6 +56,7 @@ public class ProposedApproximationAlg {
 			this.updateCostTrials.add(i, 0.0);
 			this.accessCostTrials.add(i, 0.0);
 			this.processCostTrials.add(i, 0.0);
+			this.averageErrorTrials.add(i, 0.0);
 		}
 	}
 	
@@ -719,20 +722,29 @@ public class ProposedApproximationAlg {
 				int sampleIndex = vQueryIndexToSampleIndex.get(j);
 				Sample sample = sampleList.get(sampleIndex);
 				
-				if (dc.isSampleAdmitted(sample)){
-					if (new_X[j][i] == 1d && new_Y[sampleIndex][i] == 1d) {
-						dc.admitSample(sample, vQ.getParent());
-//						if (new_Y[sampleIndex][i] != 1d) {
-//							System.out.println("A sample for this query should have been placed!!!");
-//						} else {
-//							dc.admitSample(sampleList.get(sampleIndex), vQ.getParent());
-//						}
-					}
-				} else {
-					if (new_X[j][i] == 1d && new_Y[sampleIndex][i] == 1d &&(sample.getVolume() * Parameters.computingAllocatedToUnitData < dc.getAvailableComputing() )) {
-						dc.admitSample(sample, vQ.getParent());
-					}
+				if (new_X[j][i] == 1d && new_Y[sampleIndex][i] == 1d) {
+					dc.admitSample(sample, vQ.getParent());
+//					if (new_Y[sampleIndex][i] != 1d) {
+//						System.out.println("A sample for this query should have been placed!!!");
+//					} else {
+//						dc.admitSample(sampleList.get(sampleIndex), vQ.getParent());
+//					}
 				}
+//				
+//				if (dc.isSampleAdmitted(sample)){
+//					if (new_X[j][i] == 1d && new_Y[sampleIndex][i] == 1d) {
+//						dc.admitSample(sample, vQ.getParent());
+////						if (new_Y[sampleIndex][i] != 1d) {
+////							System.out.println("A sample for this query should have been placed!!!");
+////						} else {
+////							dc.admitSample(sampleList.get(sampleIndex), vQ.getParent());
+////						}
+//					}
+//				} else {
+//					if (new_X[j][i] == 1d && new_Y[sampleIndex][i] == 1d &&(sample.getVolume() * Parameters.computingAllocatedToUnitData < dc.getAvailableComputing() )) {
+//						dc.admitSample(sample, vQ.getParent());
+//					}
+//				}
 			}
 		}
 		
@@ -775,6 +787,35 @@ public class ProposedApproximationAlg {
 				}
 			}
 		}
+		
+		Map<Query, Set<Sample>> queryPlacedSamples = new HashMap<Query, Set<Sample>>();
+		for (int i = 0; i < dcList.size(); i ++) {
+			DataCenter dc = dcList.get(i);
+			for (Entry<Sample, Set<Query>> entry : dc.getAdmittedQueriesSamples().entrySet()){
+				for (Query query : entry.getValue()) {
+					if (null == queryPlacedSamples.get(query))
+						queryPlacedSamples.put(query, new HashSet<Sample>());
+					queryPlacedSamples.get(query).add(entry.getKey());					
+				}
+			}
+		}
+		
+		double averageError = 0d; 
+		for (Entry<Query, Set<Sample>> entry : queryPlacedSamples.entrySet()) {
+			
+			double totalSampleVolume = 0d; 
+			for (Sample sam : entry.getValue())
+				totalSampleVolume += sam.getVolume();
+			
+			double errorQ = 0d; 
+			for (Sample sam : entry.getValue())
+				errorQ += (sam.getError() * sam.getVolume() / totalSampleVolume);
+			
+			averageError += errorQ;
+		}
+		averageError /= queryPlacedSamples.size(); 
+		
+		this.getAverageErrorTrials().set(trial, averageError);
 		
 		return true; 
 	}	
@@ -859,5 +900,13 @@ public class ProposedApproximationAlg {
 
 	public void setCostLowerBounds(List<Double> costLowerBounds) {
 		this.costLowerBounds = costLowerBounds;
+	}
+
+	public List<Double> getAverageErrorTrials() {
+		return averageErrorTrials;
+	}
+
+	public void setAverageErrorTrials(List<Double> averageErrorTrials) {
+		this.averageErrorTrials = averageErrorTrials;
 	}
 }

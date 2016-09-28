@@ -52,6 +52,8 @@ public class SamplePlacementSimulator {
 		double [][] aveUpdateCost = new double [numOfAlgs][network_sizes.length];
 		double [][] aveAccessCost = new double [numOfAlgs][network_sizes.length];
 		double [][] aveProcessCost = new double [numOfAlgs][network_sizes.length];
+		double [][] aveError = new double [numOfAlgs][network_sizes.length];
+
 		
 		for (int i = 0; i < network_sizes.length; i ++) {
 			int network_size = network_sizes[i];
@@ -73,12 +75,14 @@ public class SamplePlacementSimulator {
 				double averageUpdateCostT = 0d;
 				double averageAccessCostT = 0d;
 				double averageProcessCostT = 0d;
+				double averageErrorT = 0d; 
 				for (int t = 0; t < Parameters.numOfTrials; t++) {
 					averageCostT += (heuAlg.getCostTrials().get(t) / Parameters.numOfTrials);
 					averageStorageCostT += (heuAlg.getStorageCostTrials().get(t) / Parameters.numOfTrials);
 					averageUpdateCostT += (heuAlg.getUpdateCostTrials().get(t) / Parameters.numOfTrials);
 					averageAccessCostT += (heuAlg.getAccessCostTrials().get(t) / Parameters.numOfTrials);
 					averageProcessCostT += (heuAlg.getProcessCostTrials().get(t) / Parameters.numOfTrials);
+					averageErrorT += (heuAlg.getAverageErrorTrials().get(t) / Parameters.numOfTrials);
 				}
 				
 				aveCost[0][i] += (averageCostT / Parameters.roundNum);
@@ -86,6 +90,7 @@ public class SamplePlacementSimulator {
 				aveUpdateCost[0][i] += (averageUpdateCostT / Parameters.roundNum);
 				aveAccessCost[0][i] += (averageAccessCostT / Parameters.roundNum);
 				aveProcessCost[0][i] += (averageProcessCostT / Parameters.roundNum);
+				aveError[0][i] += (averageErrorT / Parameters.roundNum);
 				
 				for (Node node : simulator.getDatacenterNetwork().vertexSet()) {
 					if (node instanceof DataCenter) {
@@ -94,6 +99,12 @@ public class SamplePlacementSimulator {
 				}
 				for (InternetLink il : simulator.getDatacenterNetwork().edgeSet()) {
 					il.clear();
+				}
+				
+				for (int t = 0; t < Parameters.numOfTrials; t ++){
+					for (Dataset ds : simulator.getDatasets().get(t)){
+						ds.reset();
+					}
 				}
 				
 				ProposedApproximationAlg approAlg = new ProposedApproximationAlg(simulator);
@@ -105,6 +116,7 @@ public class SamplePlacementSimulator {
 				averageUpdateCostT = 0d;
 				averageAccessCostT = 0d;
 				averageProcessCostT = 0d;
+				averageErrorT = 0d; 
 				int numOfInvalidTrials = 0;				
 				for (int t = 0; t < Parameters.numOfTrials; t++) {
 					
@@ -116,6 +128,8 @@ public class SamplePlacementSimulator {
 					averageUpdateCostT += (approAlg.getUpdateCostTrials().get(t));
 					averageAccessCostT += (approAlg.getAccessCostTrials().get(t));
 					averageProcessCostT += (approAlg.getProcessCostTrials().get(t));
+					averageErrorT += (heuAlg.getAverageErrorTrials().get(t));
+
 				}
 				
 				averageCostLowerboundT /= (Parameters.numOfTrials - numOfInvalidTrials);
@@ -124,15 +138,16 @@ public class SamplePlacementSimulator {
 				averageUpdateCostT /= (Parameters.numOfTrials - numOfInvalidTrials);
 				averageAccessCostT /= (Parameters.numOfTrials - numOfInvalidTrials); 
 				averageProcessCostT /= (Parameters.numOfTrials - numOfInvalidTrials); 
+				averageErrorT /= (Parameters.numOfTrials - numOfInvalidTrials); 
 				
 				aveCost[1][i] += (averageCostT / Parameters.roundNum);
 				aveStorageCost[1][i] += (averageStorageCostT / Parameters.roundNum);
 				aveUpdateCost[1][i] += (averageUpdateCostT / Parameters.roundNum);
 				aveAccessCost[1][i] += (averageAccessCostT / Parameters.roundNum);
 				aveProcessCost[1][i] += (averageProcessCostT / Parameters.roundNum);
-				
-				aveCost[2][i] += (averageCostLowerboundT / Parameters.roundNum);
+				aveError[1][i] += (averageErrorT / Parameters.roundNum);
 
+				aveCost[2][i] += (averageCostLowerboundT / Parameters.roundNum);
 			}
 		}
 		
@@ -142,6 +157,16 @@ public class SamplePlacementSimulator {
 			String out = "";
 			for (int j = 0; j < numOfAlgs; j ++){
 				out += aveCost[j][i] + " ";
+			}
+			System.out.println("" + network_size + " " + out);
+		}
+		
+		System.out.println("average errors");
+		for (int i = 0; i < network_sizes.length; i ++) {
+			int network_size = network_sizes[i];
+			String out = "";
+			for (int j = 0; j < numOfAlgs - 1; j ++){
+				out += aveError[j][i] + " ";
 			}
 			System.out.println("" + network_size + " " + out);
 		}
@@ -312,15 +337,13 @@ public class SamplePlacementSimulator {
 				approAlg.run();
 				
 				double averageCostT = 0d;
-				double averageStorageCostT = 0d; 
-				double averageUpdateCostT = 0d; 
+				double averageStorageCostT = 0d;
+				double averageUpdateCostT = 0d;
 				double averageAccessCostT = 0d;
 				double averageProcessCostT = 0d;
 				int numOfInvalidTrials = 0;				
 				for (int t = 0; t < Parameters.numOfTrials; t++) {
-					
 					if (approAlg.getCostTrials().get(t) == 0d) numOfInvalidTrials ++; 
-						
 					averageCostT += (approAlg.getCostTrials().get(t));
 					averageStorageCostT += (approAlg.getStorageCostTrials().get(t));
 					averageUpdateCostT += (approAlg.getUpdateCostTrials().get(t));
