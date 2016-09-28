@@ -32,6 +32,7 @@ public class ProposedApproximationAlg {
 	private List<Integer> admittedNumOfQueriesTrials = new ArrayList<Integer>();
 
 	private List<Double> costTrials = new ArrayList<Double>();
+	private List<Double> costLowerBounds = new ArrayList<Double>();
 	private List<Double> storageCostTrials = new ArrayList<Double>();
 	private List<Double> updateCostTrials = new ArrayList<Double>();
 	private List<Double> accessCostTrials = new ArrayList<Double>();
@@ -48,6 +49,7 @@ public class ProposedApproximationAlg {
 		for (int i = 0; i < Parameters.numOfTrials; i++) {
 			this.admittedNumOfQueriesTrials.add(i, 0);
 			this.costTrials.add(i, 0.0);
+			this.costLowerBounds.add(i, 0.0);
 			this.storageCostTrials.add(i, 0.0);
 			this.updateCostTrials.add(i, 0.0);
 			this.accessCostTrials.add(i, 0.0);
@@ -84,7 +86,7 @@ public class ProposedApproximationAlg {
 				}
 				
 				// run the approximation algorithm. 
-				success = this.approximation(this.simulator.getDataCenters(), sampleList, queryList, error, datacenterNetwork);
+				success = this.approximation(this.simulator.getDataCenters(), sampleList, queryList, error, datacenterNetwork, trial);
 			}
 			
 			double totalStorageCostTrial = 0d; 
@@ -159,7 +161,7 @@ public class ProposedApproximationAlg {
 	 * 
 	 * */
 	public boolean approximation(List<DataCenter> dcList, ArrayList<Sample> sampleList, ArrayList<Query> queryList, double error, 
-			SimpleWeightedGraph<Node, InternetLink> datacenterNetwork) {
+			SimpleWeightedGraph<Node, InternetLink> datacenterNetwork, int trial) {
 
 		
 		List<Query> virtualQueries = new ArrayList<Query>();
@@ -182,8 +184,8 @@ public class ProposedApproximationAlg {
 		Map<Integer, Integer> vQueryIndexToSampleIndex = new HashMap<Integer, Integer>();
 		for (int j = 0; j < virtualQueries.size(); j ++) {
 			Sample sample = virtualQueries.get(j).getDatasets().get(0).getSample(error);
-			for (int o = 0; o < sampleList.size(); o ++){
-				if (sample.equals(sampleList.get(o))){
+			for (int o = 0; o < sampleList.size(); o ++) {
+				if (sample.equals(sampleList.get(o))) {
 					vQueryIndexToSampleIndex.put(j, o);
 					break;
 				}
@@ -196,6 +198,7 @@ public class ProposedApproximationAlg {
 		double [][] X = new double[virtualQueries.size()][dcList.size()];// [queries][data centers]
 		double [][] Y = new double[sampleList.size()][dcList.size()];// [samples][data centers]
 		double[] objs = null; 
+		boolean integral = true; 
 		try {
 			/**
 			 * constrains structure: query * datacenters + sample * datacenters
@@ -342,12 +345,19 @@ public class ProposedApproximationAlg {
 			for (int j = 0; j < virtualQueries.size(); j ++) {
 				for (int i = 0; i < dcList.size(); i ++) {
 					X[j][i] = vars[i * virtualQueries.size() + j];
+					if (X[j][i] > 0.99 && X[j][i] < 1)
+						X[j][i] = 1d;
+					
+					if (X[j][i] != 1d)
+						integral = false; 
 				}
 			}
 			
 			for (int o = 0; o < sampleList.size(); o ++) {
 				for (int i = 0; i < dcList.size(); i ++) {
 					Y[o][i] = vars[virtualQueries.size() * dcList.size() + i * sampleList.size() + o];
+					if (Y[o][i] > 0.99 && Y[o][i] < 1)
+						Y[o][i] = 1d;
 				}
 			}
 			
@@ -359,7 +369,7 @@ public class ProposedApproximationAlg {
 		
 		for (int j = 0; j < virtualQueries.size(); j ++){
 			Query vQuery = virtualQueries.get(j); 
-			double ilpCost = 0d; 
+			double ilpCost = 0d;
 			for (int i = 0; i < dcList.size(); i ++){
 				ilpCost += X[j][i] * objs[virtualQueries.size() * i + j];
 			}
@@ -482,8 +492,11 @@ public class ProposedApproximationAlg {
 									cost = 0d;
 								cost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(e));
 							}
-							cost *= sample.getVolume();
 						}
+						
+						dc.setDistToQueryHomeDataCenter(cost);
+						
+						cost *= sample.getVolume();
 						
 						if (cost <= 2 * entry.getKey().getILPcost()) {
 							fractionallyAssignedDCs_.add(dc);
@@ -504,6 +517,9 @@ public class ProposedApproximationAlg {
 					totalToBeAssigned = fractionallyAssignedDCs.size();
 				} else 
 					totalToBeAssigned = 1; 
+				
+				Collections.sort(fractionallyAssignedDCs_, DataCenter.DistToQueryComparator);
+				Collections.sort(fractionallyAssignedDCs__, DataCenter.DistToQueryComparator);
 				
 				//double totalDemandGroup = entry.getKey().getDemand_();
 				ArrayList<DataCenter> fullyAssignedDCs = new ArrayList<DataCenter>();
@@ -556,6 +572,7 @@ public class ProposedApproximationAlg {
 			}
 		}
 		
+		this.costLowerBounds.set(trial, this.optimalLowerBound);
 		// now process with new_X and new_Y. 
 		//ArrayList<Query> vQueriesViolatedDelay = new ArrayList<Query>();
 		for (int j = 0; j < virtualQueries.size(); j ++) {
@@ -609,8 +626,7 @@ public class ProposedApproximationAlg {
 				if (new_X[j][i] == 1d) {
 					Query vQ = virtualQueries.get(j);
 					int sampleIndex = vQueryIndexToSampleIndex.get(j);
-				
-					if (new_Y[sampleIndex][i] != 1d){
+					if (new_Y[sampleIndex][i] != 1d) {
 						System.out.println("A sample for this query should have been placed!!!");
 					} else {
 						dc.admitSample(sampleList.get(sampleIndex), vQ.getParent());
@@ -694,5 +710,13 @@ public class ProposedApproximationAlg {
 
 	public void setProcessCostTrials(List<Double> processCostPerTS) {
 		this.processCostTrials = processCostPerTS;
+	}
+
+	public List<Double> getCostLowerBounds() {
+		return costLowerBounds;
+	}
+
+	public void setCostLowerBounds(List<Double> costLowerBounds) {
+		this.costLowerBounds = costLowerBounds;
 	}
 }

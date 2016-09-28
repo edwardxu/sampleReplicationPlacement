@@ -44,7 +44,7 @@ public class SamplePlacementSimulator {
 	
 	public static void performance() {
 		
-		int numOfAlgs = 2; 
+		int numOfAlgs = 2 + 1; 
 		//int [] network_sizes = {20, 30, 40, 50, 100, 150, 200}; 
 		int [] network_sizes = {20, 30};
 		double [][] aveCost = new double [numOfAlgs][network_sizes.length];
@@ -100,6 +100,7 @@ public class SamplePlacementSimulator {
 				approAlg.run();
 				
 				averageCostT = 0d;
+				double averageCostLowerboundT = 0d;
 				averageStorageCostT = 0d;
 				averageUpdateCostT = 0d;
 				averageAccessCostT = 0d;
@@ -110,12 +111,14 @@ public class SamplePlacementSimulator {
 					if (approAlg.getCostTrials().get(t) == 0d) numOfInvalidTrials ++; 
 						
 					averageCostT += (approAlg.getCostTrials().get(t));
+					averageCostLowerboundT += approAlg.getCostLowerBounds().get(t);
 					averageStorageCostT += (approAlg.getStorageCostTrials().get(t));
 					averageUpdateCostT += (approAlg.getUpdateCostTrials().get(t));
 					averageAccessCostT += (approAlg.getAccessCostTrials().get(t));
 					averageProcessCostT += (approAlg.getProcessCostTrials().get(t));
 				}
 				
+				averageCostLowerboundT /= (Parameters.numOfTrials - numOfInvalidTrials);
 				averageCostT /= (Parameters.numOfTrials - numOfInvalidTrials);
 				averageStorageCostT /= (Parameters.numOfTrials - numOfInvalidTrials);
 				averageUpdateCostT /= (Parameters.numOfTrials - numOfInvalidTrials);
@@ -127,10 +130,13 @@ public class SamplePlacementSimulator {
 				aveUpdateCost[1][i] += (averageUpdateCostT / Parameters.roundNum);
 				aveAccessCost[1][i] += (averageAccessCostT / Parameters.roundNum);
 				aveProcessCost[1][i] += (averageProcessCostT / Parameters.roundNum);
+				
+				aveCost[2][i] += (averageCostLowerboundT / Parameters.roundNum);
+
 			}
 		}
 		
-		System.out.println("total costs");
+		System.out.println("total costs and lower bound");
 		for (int i = 0; i < network_sizes.length; i ++) {
 			int network_size = network_sizes[i];
 			String out = "";
@@ -144,7 +150,7 @@ public class SamplePlacementSimulator {
 		for (int i = 0; i < network_sizes.length; i ++) {
 			int network_size = network_sizes[i];
 			String out = "";
-			for (int j = 0; j < numOfAlgs; j ++){
+			for (int j = 0; j < numOfAlgs - 1; j ++){
 				out += aveStorageCost[j][i] + " ";
 			}
 			System.out.println("" + network_size + " " + out);
@@ -154,7 +160,7 @@ public class SamplePlacementSimulator {
 		for (int i = 0; i < network_sizes.length; i ++) {
 			int network_size = network_sizes[i];
 			String out = "";
-			for (int j = 0; j < numOfAlgs; j ++){
+			for (int j = 0; j < numOfAlgs - 1; j ++){
 				out += aveUpdateCost[j][i] + " ";
 			}
 			System.out.println("" + network_size + " " + out);
@@ -164,7 +170,7 @@ public class SamplePlacementSimulator {
 		for (int i = 0; i < network_sizes.length; i ++) {
 			int network_size = network_sizes[i];
 			String out = "";
-			for (int j = 0; j < numOfAlgs; j ++){
+			for (int j = 0; j < numOfAlgs - 1; j ++){
 				out += aveAccessCost[j][i] + " ";
 			}
 			System.out.println("" + network_size + " " + out);
@@ -174,7 +180,7 @@ public class SamplePlacementSimulator {
 		for (int i = 0; i < network_sizes.length; i ++) {
 			int network_size = network_sizes[i];
 			String out = "";
-			for (int j = 0; j < numOfAlgs; j ++){
+			for (int j = 0; j < numOfAlgs - 1; j ++){
 				out += aveProcessCost[j][i] + " ";
 			}
 			System.out.println("" + network_size + " " + out);
