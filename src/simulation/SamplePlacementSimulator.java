@@ -117,8 +117,8 @@ public class SamplePlacementSimulator {
 				}
 				
 				averageCostT /= (Parameters.numOfTrials - numOfInvalidTrials);
-				averageStorageCostT /= (Parameters.numOfTrials - numOfInvalidTrials); 
-				averageUpdateCostT /= (Parameters.numOfTrials - numOfInvalidTrials); 
+				averageStorageCostT /= (Parameters.numOfTrials - numOfInvalidTrials);
+				averageUpdateCostT /= (Parameters.numOfTrials - numOfInvalidTrials);
 				averageAccessCostT /= (Parameters.numOfTrials - numOfInvalidTrials); 
 				averageProcessCostT /= (Parameters.numOfTrials - numOfInvalidTrials); 
 				
