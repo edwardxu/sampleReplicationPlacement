@@ -102,7 +102,7 @@ public class ProposedApproximationAlg {
 						totalProcessCostTrial += admittedSample.getVolume() * dc.getProcessingCost();
 						
 						double updateCost = 0d; 
-						if (!admittedSample.getParentDataset().getDatacenter().equals(dc)){
+						if (!admittedSample.getParentDataset().getDatacenter().equals(dc)) {
 							DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, admittedSample.getParentDataset().getDatacenter(), dc);
 							updateCost = Double.MAX_VALUE;
 							for (int i = 0; i < shortestPath.getPathEdgeList().size(); i ++){
@@ -316,7 +316,7 @@ public class ProposedApproximationAlg {
 				}
 			}
 
-			//solver.setOutputfile(Parameters.LPOutputFile);
+			solver.setOutputfile(Parameters.LPOutputFile);
 
 			solver.setObjFn(objs);
 			// solver.setPresolve(1, 50000);
@@ -422,7 +422,9 @@ public class ProposedApproximationAlg {
 								cost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(e));
 							}
 						}
-					
+						
+						cost *= sample.getVolume();
+						
 						double maxILPCost = (vQuery1.getILPcost() > vQuery2.getILPcost())? vQuery1.getILPcost(): vQuery2.getILPcost();
 						if (cost < 4 * maxILPCost) {
 							foundK = true;
@@ -460,6 +462,8 @@ public class ProposedApproximationAlg {
 			Sample sample = sampleList.get(o);
 			Map<Query, Set<Query>> clustersG_o = clusters.get(o);
 			
+			Set<DataCenter> DCsPlacedO = new HashSet<DataCenter>();
+			
 			for (Entry<Query, Set<Query>> entry : clustersG_o.entrySet()) {
 				
 				ArrayList<DataCenter> fractionallyAssignedDCs = new ArrayList<DataCenter>();
@@ -474,7 +478,7 @@ public class ProposedApproximationAlg {
 					DataCenter dc = dcList.get(i);
 					dcToIndex.put(dc, i);
 					
-					if (X[j][i] > 0) {
+					if (X[j][i] > 0 || DCsPlacedO.contains(dc)) {
 						
 						if (X[j][i] < 1d) 
 							totalAssigned += X[j][i];
@@ -494,49 +498,115 @@ public class ProposedApproximationAlg {
 							}
 						}
 						
+						if (!DCsPlacedO.contains(dc)) {
+							double updateCost = 0d;
+							if(!sample.getParentDataset().getDatacenter().equals(dc)) {
+								DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, sample.getParentDataset().getDatacenter(), dc);
+								updateCost = Double.MAX_VALUE;
+								for (int e = 0; e < shortestPath.getPathEdgeList().size(); e++) {
+									if (0 == e ) 
+										updateCost = 0d;
+									updateCost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(e));
+								}
+							}
+							cost += dc.getProcessingCost() + dc.getStorageCost() + updateCost;
+						}
+						
+						cost *= sample.getVolume();
+						
+						dc.setDistToQueryHomeDataCenter(cost);
+						
+						if (cost <= 2 * entry.getKey().getILPcost()) {
+							if (!fractionallyAssignedDCs_.contains(dc))
+								fractionallyAssignedDCs_.add(dc);
+						} else {
+							if (!fractionallyAssignedDCs__.contains(dc))
+								fractionallyAssignedDCs__.add(dc);
+						}
+					}
+					
+					if (Y[o][i] > 0) {
+						
+						if (!fractionallyAssignedDCs.contains(dc))
+							fractionallyAssignedDCs.add(dc);
+						else 
+							continue;
+						
+						double cost = 0d; 
+						if(!entry.getKey().getHomeDataCenter().equals(dc)) {
+							DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, entry.getKey().getHomeDataCenter(), dc);
+							cost = Double.MAX_VALUE;
+							for (int e = 0; e < shortestPath.getPathEdgeList().size(); e++) {
+								if (0 == e ) 
+									cost = 0d;
+								cost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(e));
+							}
+						}
+						
+						if (!DCsPlacedO.contains(dc)) {
+							double updateCost = 0d;
+							if(!sample.getParentDataset().getDatacenter().equals(dc)) {
+								DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, sample.getParentDataset().getDatacenter(), dc);
+								updateCost = Double.MAX_VALUE;
+								for (int e = 0; e < shortestPath.getPathEdgeList().size(); e++) {
+									if (0 == e ) 
+										updateCost = 0d;
+									updateCost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(e));
+								}
+							}
+							cost += dc.getProcessingCost() + dc.getStorageCost() + updateCost;
+						}
+						
+						cost *= sample.getVolume();
+						
 						dc.setDistToQueryHomeDataCenter(cost);
 						
 						cost *= sample.getVolume();
 						
 						if (cost <= 2 * entry.getKey().getILPcost()) {
-							fractionallyAssignedDCs_.add(dc);
+							if (!fractionallyAssignedDCs_.contains(dc))
+								fractionallyAssignedDCs_.add(dc);
 						} else {
-							fractionallyAssignedDCs__.add(dc);
+							if (!fractionallyAssignedDCs__.contains(dc))
+								fractionallyAssignedDCs__.add(dc);
 						}
-					}
+					}					
 				}
 				
 				if (totalAssigned == 0d)
 					return false; 
 				
-				int totalToBeAssigned = 0;
-				if (totalAssigned > 1d)
-					totalToBeAssigned = (int) totalAssigned;
-				else if (totalAssigned > fractionallyAssignedDCs.size() ){
-					System.out.println(totalAssigned + " v.s. " + dcList.size());
-					totalToBeAssigned = fractionallyAssignedDCs.size();
-				} else 
-					totalToBeAssigned = 1; 
+				int totalToBeAssigned = 1;
+//				if (totalAssigned > 1d)
+//					totalToBeAssigned = (int) totalAssigned;
+//				else if (totalAssigned > fractionallyAssignedDCs.size() ){
+//					System.out.println(totalAssigned + " v.s. " + dcList.size());
+//					totalToBeAssigned = fractionallyAssignedDCs.size();
+//				} else 
+//					totalToBeAssigned = 1;
 				
 				Collections.sort(fractionallyAssignedDCs_, DataCenter.DistToQueryComparator);
 				Collections.sort(fractionallyAssignedDCs__, DataCenter.DistToQueryComparator);
 				
 				//double totalDemandGroup = entry.getKey().getDemand_();
-				ArrayList<DataCenter> fullyAssignedDCs = new ArrayList<DataCenter>();
+				Set<DataCenter> fullyAssignedDCs = new HashSet<DataCenter>();
 				if (totalToBeAssigned <= fractionallyAssignedDCs_.size()) {
 					for (int mm = 0; mm < totalToBeAssigned; mm ++) {
-						new_Y[o][dcToIndex.get(fractionallyAssignedDCs_.get(mm))] = 1d;  
+						new_Y[o][dcToIndex.get(fractionallyAssignedDCs_.get(mm))] = 1d;
+						//DCsPlacedO.add(fractionallyAssignedDCs_.get(mm));
 						//new_X[j][dcToIndex.get(fractionallyAssignedDCs_.get(mm))] = 1d; 
 						fullyAssignedDCs.add(fractionallyAssignedDCs_.get(mm));
 					}
 				} else {
 					for (int mm = 0; mm < fractionallyAssignedDCs_.size(); mm ++) {
 						new_Y[o][dcToIndex.get(fractionallyAssignedDCs_.get(mm))] = 1d;
+						//DCsPlacedO.add(fractionallyAssignedDCs_.get(mm));
 						//new_X[j][dcToIndex.get(fractionallyAssignedDCs_.get(mm))] = 1d; 
 						fullyAssignedDCs.add(fractionallyAssignedDCs_.get(mm));
 					}
 					for (int mm = 0; mm < totalToBeAssigned - fractionallyAssignedDCs_.size(); mm ++) {
 						new_Y[o][dcToIndex.get(fractionallyAssignedDCs__.get(mm))] = 1d;
+						//DCsPlacedO.add(fractionallyAssignedDCs__.get(mm));
 						//new_X[j][dcToIndex.get(fractionallyAssignedDCs.get(mm))] = 1d; 
 						fullyAssignedDCs.add(fractionallyAssignedDCs__.get(mm));
 					}
@@ -559,15 +629,36 @@ public class ProposedApproximationAlg {
 									cost = 0d;
 								cost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(e));
 							}
-							cost *= sample.getVolume();
 						}
+						
+						if (!DCsPlacedO.contains(dc)) {
+							double updateCost = 0d;
+							if(!sample.getParentDataset().getDatacenter().equals(dc)) {
+								DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, sample.getParentDataset().getDatacenter(), dc);
+								updateCost = Double.MAX_VALUE;
+								for (int e = 0; e < shortestPath.getPathEdgeList().size(); e++) {
+									if (0 == e ) 
+										updateCost = 0d;
+									updateCost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(e));
+								}
+							}
+							cost += dc.getProcessingCost() + dc.getStorageCost() + updateCost;
+						}
+							
+						cost *= sample.getVolume();
 						
 						if (minCost > cost) {
 							minCost = cost; 
 							minCostDC = dc; 
 						}
 					}
+					
 					new_X[vQueryIndexMapInList.get(toBeAssignedQ)][dcToIndex.get(minCostDC)] = 1d;
+					
+					if (new_Y[o][dcToIndex.get(minCostDC)] != 1d){
+						new_Y[o][dcToIndex.get(minCostDC)] = 1d; 
+						DCsPlacedO.add(minCostDC);
+					}
 				}
 			}
 		}
@@ -587,7 +678,7 @@ public class ProposedApproximationAlg {
 						DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, vQ.getHomeDataCenter(), targetDC);
 						unitDelay = Double.MAX_VALUE;
 						for (int e = 0; e < shortestPath.getPathEdgeList().size(); e++) {
-							if (0 == e ) 
+							if (0 == e )
 								unitDelay = 0d;
 							unitDelay += shortestPath.getPathEdgeList().get(e).getDelay();
 						}
@@ -614,6 +705,7 @@ public class ProposedApproximationAlg {
 						//sampleIndexMapInList.remove(sample);
 						sampleIndexMapInList.put(newSample, sampleIndex);
 						sampleList.set(sampleIndex, newSample);
+						vQueryIndexToSampleIndex.put(j, sampleIndex);
 					}
 				}
 			}
@@ -623,14 +715,63 @@ public class ProposedApproximationAlg {
 		for (int i = 0; i < dcList.size(); i ++) {
 			DataCenter dc = dcList.get(i);
 			for (int j = 0; j < virtualQueries.size(); j ++) {
-				if (new_X[j][i] == 1d) {
-					Query vQ = virtualQueries.get(j);
-					int sampleIndex = vQueryIndexToSampleIndex.get(j);
-					if (new_Y[sampleIndex][i] != 1d) {
-						System.out.println("A sample for this query should have been placed!!!");
-					} else {
-						dc.admitSample(sampleList.get(sampleIndex), vQ.getParent());
+				Query vQ = virtualQueries.get(j);
+				int sampleIndex = vQueryIndexToSampleIndex.get(j);
+				Sample sample = sampleList.get(sampleIndex);
+				
+				if (dc.isSampleAdmitted(sample)){
+					if (new_X[j][i] == 1d && new_Y[sampleIndex][i] == 1d) {
+						dc.admitSample(sample, vQ.getParent());
+//						if (new_Y[sampleIndex][i] != 1d) {
+//							System.out.println("A sample for this query should have been placed!!!");
+//						} else {
+//							dc.admitSample(sampleList.get(sampleIndex), vQ.getParent());
+//						}
 					}
+				} else {
+					if (new_X[j][i] == 1d && new_Y[sampleIndex][i] == 1d &&(sample.getVolume() * Parameters.computingAllocatedToUnitData < dc.getAvailableComputing() )) {
+						dc.admitSample(sample, vQ.getParent());
+					}
+				}
+			}
+		}
+		
+		for (int i = 0; i < dcList.size(); i ++) {
+			DataCenter dc = dcList.get(i);
+			
+			if (dc.getAvailableComputing() <= 0) {
+				
+				boolean errorIncreased = true; 
+				while (dc.getAvailableComputing() <= 0 && errorIncreased ) {
+					
+					Set<Sample> admittedSamplesDC = new HashSet<Sample>();
+					Map<Sample, Set<Query>> admittedQueriesSamplesDC = new HashMap<Sample, Set<Query>>();
+					
+					int numOfErrorsIncreased = 0; 
+					for (Entry<Sample, Set<Query>> entry : dc.getAdmittedQueriesSamples().entrySet()){
+						
+						double errorSample = entry.getKey().getError();
+						for (int mm = 0; mm < Parameters.errorBounds.length - 1; mm ++){
+							if (errorSample == Parameters.errorBounds[mm]) {
+								errorSample = Parameters.errorBounds[mm + 1];
+								break;
+							}
+						}
+						
+						
+						Sample newSample = entry.getKey().getParentDataset().getSample(errorSample);
+						if (!newSample.equals(entry.getKey()))
+							numOfErrorsIncreased ++; 
+						
+						admittedQueriesSamplesDC.put(newSample, entry.getValue());
+						admittedSamplesDC.add(newSample);
+					}
+					
+					if (0 == numOfErrorsIncreased)
+						errorIncreased = false; 
+					
+					dc.setAdmittedQueriesSamples(admittedQueriesSamplesDC);
+					dc.setAdmittedSamples(admittedSamplesDC);
 				}
 			}
 		}

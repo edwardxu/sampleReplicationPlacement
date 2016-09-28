@@ -46,7 +46,7 @@ public class SamplePlacementSimulator {
 		
 		int numOfAlgs = 2 + 1; 
 		//int [] network_sizes = {20, 30, 40, 50, 100, 150, 200}; 
-		int [] network_sizes = {20, 30};
+		int [] network_sizes = {50};
 		double [][] aveCost = new double [numOfAlgs][network_sizes.length];
 		double [][] aveStorageCost = new double [numOfAlgs][network_sizes.length];
 		double [][] aveUpdateCost = new double [numOfAlgs][network_sizes.length];
@@ -69,8 +69,8 @@ public class SamplePlacementSimulator {
 				heuAlg.run();
 				
 				double averageCostT = 0d;
-				double averageStorageCostT = 0d; 
-				double averageUpdateCostT = 0d; 
+				double averageStorageCostT = 0d;
+				double averageUpdateCostT = 0d;
 				double averageAccessCostT = 0d;
 				double averageProcessCostT = 0d;
 				for (int t = 0; t < Parameters.numOfTrials; t++) {

@@ -5,7 +5,7 @@ public class Parameters {
 	/**************overall settings****************/
 	final public static int printScale = 10;
 	
-	final public static int numOfTrials = 10;
+	final public static int numOfTrials = 5;
 	final public static int roundNum = 5;
 	
 	/**************data center and links****************/
@@ -34,7 +34,7 @@ public class Parameters {
 	
 	//public static int numOfSamplesEachDataset = 3;
 	/**************queries****************/
-	public static int maxNumOfQueriesPerTS = 250; // to be reset
+	public static int maxNumOfQueriesPerTS = 100; // to be reset
 	public static int minNumOfQueriesPerTS = 50; // to be reset
 	
 	final public static int queryRateMax = 10;// to be reset
@@ -54,8 +54,8 @@ public class Parameters {
 	final public static double storageCostUnitDataMax = 0.0035;// $ per GB data //c_s(v_i) 
 	final public static double storageCostUnitDataMin = 0.0010;// $ per GB data //c_s(v_i) 
 	
-	final public static double processCostUnitDataMax = 0.22;// $ per GB data // c_p(v_i) 
-	final public static double processCostUnitDataMin = 0.15;// $ per GB data // c_p(v_i)
+	final public static double processCostUnitDataMax = 0.1;//0.22 $ per GB data // c_p(v_i) 
+	final public static double processCostUnitDataMin = 0.05;//0.15 $ per GB data // c_p(v_i)
 	
 	final public static double computingAllocatedToUnitData = 15;//10 GHz $ per GB //r_c
 	
@@ -63,5 +63,7 @@ public class Parameters {
 	
 	final public static double maxBandwidthCost = 0.12;// the maximum cost of transferring 1 GB data 
 	final public static double minBandwidthCost = 0.05;// the minimum cost of transferring 1 GB data
+
+	public static final String LPOutputFile = "./out/LPOutput.txt";
 	
 }
