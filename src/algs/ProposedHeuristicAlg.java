@@ -40,6 +40,8 @@ public class ProposedHeuristicAlg {
 
 	private List<Double> averageErrorTrials = new ArrayList<Double>();
 	
+	private double lowestError = Parameters.errorBounds[0];
+	
 	/************* construction function *****************/
 	public ProposedHeuristicAlg(SamplePlacementSimulator simulator) {
 		this.simulator = simulator;
@@ -68,6 +70,13 @@ public class ProposedHeuristicAlg {
 			List<Commodity> commodities = new ArrayList<Commodity>();
 			List<Commodity> rejectedCommodities = new ArrayList<Commodity>();
 			int errorIndexForUnAdmitted = 0;
+			for (int i = 0; i < Parameters.errorBounds.length; i ++) {
+				if (this.getLowestError() == Parameters.errorBounds[i]){
+					errorIndexForUnAdmitted = i;
+					break;
+				}
+			}
+			
 			SimpleWeightedGraph<Node, MinCostFlowEdge> flowNet = this.initializeFlowNetwork(datacenterNetwork, commodities, trial, Parameters.errorBounds[errorIndexForUnAdmitted]);
 			boolean increaseAdmittedErrors = false;
 			
@@ -534,6 +543,14 @@ public class ProposedHeuristicAlg {
 
 	public void setAverageErrorTrials(List<Double> averageErrorTrials) {
 		this.averageErrorTrials = averageErrorTrials;
+	}
+
+	public double getLowestError() {
+		return lowestError;
+	}
+
+	public void setLowestError(double lowestError) {
+		this.lowestError = lowestError;
 	}
 
 }

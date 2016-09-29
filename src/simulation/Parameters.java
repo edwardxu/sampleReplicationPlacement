@@ -27,15 +27,15 @@ public class Parameters {
 	final public static double sizePerDatasetMax = 20;//GB
 	final public static double sizePerDatasetMin = 10;//GB
 	
-	final public static double [] errorBounds = {0.05, 0.1, 0.15, 0.2, 0.25};
+	final public static double [] errorBounds = {0.05, 0.075, 0.1, 0.125, 0.15, 0.175, 0.2, 0.225, 0.25};
 	
 	public static int maxNumOfDatasetsPerTS = 100;// to be reset
 	public static int minNumOfDatasetsPerTS = 50;// to be reset
 	
 	//public static int numOfSamplesEachDataset = 3;
 	/**************queries****************/
-	public static int maxNumOfQueriesPerTS = 100; // to be reset
-	public static int minNumOfQueriesPerTS = 50; // to be reset
+	public static int maxNumOfQueriesPerTS = 200; // to be reset
+	public static int minNumOfQueriesPerTS = 100; // to be reset
 	
 	final public static int queryRateMax = 10;// to be reset
 	final public static int queryRateMin = 1;// to be reset
@@ -43,8 +43,8 @@ public class Parameters {
 	final public static int numOfDatasetPerQueryMax = 3;
 	final public static int numOfDatasetPerQueryMin = 1;
 	
-	final public static double queryDelayRequirementMax = 10; // ms
-	final public static double queryDelayRequirementMin = 100;// ms
+	final public static double queryDelayRequirementMax = 50; // ms
+	final public static double queryDelayRequirementMin = 10;// ms
 	
 	//final public static int lifeCycleMax = (int) ((int) numOfTrials * 0.2); 
 	//final public static int lifeCycleMin = (int) ((int) numOfTrials * 0.02);

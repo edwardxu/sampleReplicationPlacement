@@ -92,10 +92,10 @@ public class ProposedApproximationAlg {
 				success = this.approximation(this.simulator.getDataCenters(), sampleList, queryList, error, datacenterNetwork, trial);
 			}
 			
-			double totalStorageCostTrial = 0d; 
-			double totalUpdateCostTrial = 0d; 
+			double totalStorageCostTrial = 0d;
+			double totalUpdateCostTrial = 0d;
 			double totalAccessCostTrial = 0d;
-			double totalProcessCostTrial = 0d; 
+			double totalProcessCostTrial = 0d;
 			
 			if (success) {
 				for (DataCenter dc : this.simulator.getDataCenters()) {
