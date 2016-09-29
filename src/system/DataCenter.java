@@ -53,8 +53,8 @@ public class DataCenter extends Node {
 	/*************functions*************/
 	
 	public void reset(){
-		this.getAdmittedSamples().clear();
-		this.getAdmittedQueriesSamples().clear();
+		this.setAdmittedSamples(new HashSet<Sample>());
+		this.setAdmittedQueriesSamples(new HashMap<Sample, Set<Query>>());
 		
 		this.availComputing = this.getComputingCapacity();
 		this.parent = null;
@@ -64,10 +64,17 @@ public class DataCenter extends Node {
 	public void admitSample(Sample sample, Query query) {
 		this.getAdmittedSamples().add(sample);
 		
+		if (query == null)
+			System.out.println("sssss");
+		
 		if (null == this.getAdmittedQueriesSamples().get(sample))
 			this.getAdmittedQueriesSamples().put(sample, new HashSet<Query>());
-		
+				
 		this.getAdmittedQueriesSamples().get(sample).add(query);
+		
+		if (null == this.getAdmittedQueriesSamples().get(sample))
+			System.out.println("sssss");
+
 	}
 	
 	public void removeSample(Sample sample){
@@ -81,9 +88,11 @@ public class DataCenter extends Node {
 	
 	public double getAvailableComputing() {
 		double occupiedComputing = 0d; 
-		for (Entry<Sample, Set<Query>> entry : this.getAdmittedQueriesSamples().entrySet()) {
-			occupiedComputing += entry.getKey().getVolume() * Parameters.computingAllocatedToUnitData * entry.getValue().size();
-		}
+		//if (!this.getAdmittedQueriesSamples().isEmpty()) {
+			for (Entry<Sample, Set<Query>> entry : this.getAdmittedQueriesSamples().entrySet()) {
+				occupiedComputing += entry.getKey().getVolume() * Parameters.computingAllocatedToUnitData * entry.getValue().size();
+			}
+		//}
 		this.availComputing = this.computingCapacity - occupiedComputing;
 		return this.availComputing;
 	}

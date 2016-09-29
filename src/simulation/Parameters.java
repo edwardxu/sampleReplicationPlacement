@@ -16,16 +16,16 @@ public class Parameters {
 	final public static double maxComputingPerDC = 2000;//GHz  //the maximum computing capacity of a data center
 	final public static double minComputingPerDC = 1000;//GHz  //the minimum computing capacity of a data center
 
-	final public static double minLinkDelay = 1; //ms
-	final public static double maxLinkDelay = 5; //ms
+	final public static double minLinkDelay = 10; //ms
+	final public static double maxLinkDelay = 100; //ms 50
 	
-	final public static double maxBandwidthPerLink = 10;//1;//Gbps //the maximum network capacity of an inter-datacentre link
-	final public static double minBandwidthPerLink = 1;//0.1;//Gbps   //the minimum network capacity of an inter-datacenter link
+	final public static double maxBandwidthPerLink = 1000;//1;//Gbps //the maximum network capacity of an inter-datacentre link
+	final public static double minBandwidthPerLink = 100;//0.1;//Gbps   //the minimum network capacity of an inter-datacenter link
 	
 	/**************data sets and their samples****************/
 	//the size of a dataset
-	final public static double sizePerDatasetMax = 20;//GB
-	final public static double sizePerDatasetMin = 10;//GB
+	final public static double sizePerDatasetMax = 10;//GB
+	final public static double sizePerDatasetMin = 5;//GB
 	
 	final public static double [] errorBounds = {0.05, 0.075, 0.1, 0.125, 0.15, 0.175, 0.2, 0.225, 0.25};
 	
@@ -34,8 +34,8 @@ public class Parameters {
 	
 	//public static int numOfSamplesEachDataset = 3;
 	/**************queries****************/
-	public static int maxNumOfQueriesPerTS = 200; // to be reset
-	public static int minNumOfQueriesPerTS = 100; // to be reset
+	public static int maxNumOfQueriesPerTS = 100; // to be reset
+	public static int minNumOfQueriesPerTS = 50; // to be reset
 	
 	final public static int queryRateMax = 10;// to be reset
 	final public static int queryRateMin = 1;// to be reset
@@ -43,8 +43,8 @@ public class Parameters {
 	final public static int numOfDatasetPerQueryMax = 3;
 	final public static int numOfDatasetPerQueryMin = 1;
 	
-	final public static double queryDelayRequirementMax = 50; // ms
-	final public static double queryDelayRequirementMin = 10;// ms
+	final public static double queryDelayRequirementMax = 2000; // ms 1000
+	final public static double queryDelayRequirementMin = 300;// ms 
 	
 	//final public static int lifeCycleMax = (int) ((int) numOfTrials * 0.2); 
 	//final public static int lifeCycleMin = (int) ((int) numOfTrials * 0.02);
@@ -57,7 +57,7 @@ public class Parameters {
 	final public static double processCostUnitDataMax = 0.1;//0.22 $ per GB data // c_p(v_i) 
 	final public static double processCostUnitDataMin = 0.05;//0.15 $ per GB data // c_p(v_i)
 	
-	final public static double computingAllocatedToUnitData = 15;//10 GHz $ per GB //r_c
+	final public static double computingAllocatedToUnitData = 30;//10 GHz $ per GB //r_c
 	
 	final public static double bandwidthAllocatedToUnitData = 0.065;//Gbps $ per GB //r_t
 	

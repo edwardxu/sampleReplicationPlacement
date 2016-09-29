@@ -84,8 +84,11 @@ public class ProposedHeuristicAlg {
 				
 				int numOfDCsHaveSampleErrorIncreased = 0; 
 				if (increaseAdmittedErrors) {
+					
 					for (DataCenter dc : this.simulator.getDataCenters()) {
 						Set<Sample> adjustedSamples = new HashSet<Sample>();
+						Map<Sample, Set<Query>> sampleQueries = new HashMap<Sample, Set<Query>>();
+						
 						boolean haveSampleErrorsIncreased = false; 
 						for (Sample admittedSample : dc.getAdmittedSamples()) {
 							
@@ -99,22 +102,24 @@ public class ProposedHeuristicAlg {
 							}
 							
 							if (-1 != newErrorIndex) {
-								Sample newSample = admittedSample.getParentDataset().getSample(Parameters.errorBounds[newErrorIndex]);
+								Sample newSample = admittedSample.getParentDataset().getSample(Parameters.errorBounds[newErrorIndex]);	
 								adjustedSamples.add(newSample);
-								newSample.setToBePlaced(dc);
-								Set<Query> admittedQueriesThisSample = dc.getAdmittedQueriesSamples().get(admittedSample);
-								dc.getAdmittedQueriesSamples().remove(admittedSample);
-								dc.getAdmittedQueriesSamples().put(newSample, admittedQueriesThisSample);
+								sampleQueries.put(newSample, dc.getAdmittedQueriesSamples().get(admittedSample));
 								haveSampleErrorsIncreased = true; 
 							} else {
 								adjustedSamples.add(admittedSample);
+								sampleQueries.put(admittedSample, dc.getAdmittedQueriesSamples().get(admittedSample));
 							}
 						}
+						
 						if (haveSampleErrorsIncreased)
 							numOfDCsHaveSampleErrorIncreased ++; 
 						
 						dc.setAdmittedSamples(adjustedSamples);
+						dc.setAdmittedQueriesSamples(sampleQueries);
 					}
+					
+					
 					
 					flowNet = adjustFlowNetwork(datacenterNetwork, flowNet, commodities, Parameters.errorBounds[errorIndexForUnAdmitted]);
 				}
@@ -137,8 +142,8 @@ public class ProposedHeuristicAlg {
 						if (increaseAdmittedErrors && (numOfDCsHaveSampleErrorIncreased == 0)){
 							rejectedCommodities.add(comm);
 							iter.remove();
-							continue; 
 						}
+						continue;
 					}
 					
 					DataCenter targetDC = null;
@@ -158,7 +163,6 @@ public class ProposedHeuristicAlg {
 					
 					// admit this sample into "targetDC"
 					targetDC.admitSample(toBeAdmittedSample, toBeAdmittedQuery);
-					toBeAdmittedSample.setToBePlaced(targetDC);
 					iter.remove();//  admit this commodity and remove it from the list. 
 				}
 				
@@ -178,6 +182,10 @@ public class ProposedHeuristicAlg {
 			double totalProcessCostTrial = 0d;
 			
 			for (DataCenter dc : this.simulator.getDataCenters()) {
+				
+				if (dc.getAdmittedSamples().isEmpty())
+					continue; 
+				
 				// storage cost for all placed samples
 				for (Sample admittedSample : dc.getAdmittedSamples()) {
 					totalStorageCostTrial += admittedSample.getVolume() * dc.getStorageCost();
@@ -380,6 +388,8 @@ public class ProposedHeuristicAlg {
 				
 				Sample sample = demandNode.getDataset().getSample(error); 
 				
+				delay *= sample.getVolume();
+				
 				if (((DataCenter) dcNode).isSampleAdmitted(sample)){
 					if (delay <= demandNode.getQuery().getDelayRequirement() )
 						flowNetwork.addEdge(comm.getSource(), dcNode);
@@ -450,6 +460,8 @@ public class ProposedHeuristicAlg {
 					}
 					delay += shortestPath.getPathEdgeList().get(i).getDelay();
 				}
+				
+				delay *= demandNode.getDataset().getSample(error).getVolume();
 				
 				if (delay <= demandNode.getQuery().getDelayRequirement() && 
 						(demandNode.getDataset().getSample(error).getVolume() * Parameters.computingAllocatedToUnitData < ((DataCenter) dcNode).getAvailableComputing())) {

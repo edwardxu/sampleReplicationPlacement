@@ -42,8 +42,6 @@ public class Dataset {
 	
 	public void reset(){
 		this.setPlacedSamples(new HashSet<Sample>());
-		for (Sample sam : this.getSamples())
-			sam.reset();
 	}
 	
 	public Sample getSample(double error) {

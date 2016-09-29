@@ -59,6 +59,7 @@ public class Benchmark1 {
 		setEdgeWeightDataCenterNetwork(datacenterNetwork);
 
 		for (int trial = 0; trial < Parameters.numOfTrials; trial++) {
+			
 			if (trial > 0) {
 				this.simulator.modifyCosts();// double check this.
 				this.resetDataCenterNetwork(datacenterNetwork);
@@ -85,6 +86,8 @@ public class Benchmark1 {
 				if (increaseAdmittedErrors) {
 					for (DataCenter dc : this.simulator.getDataCenters()) {
 						Set<Sample> adjustedSamples = new HashSet<Sample>();
+						Map<Sample, Set<Query>> sampleQueries = new HashMap<Sample, Set<Query>>();
+						
 						boolean haveSampleErrorsIncreased = false; 
 						for (Sample admittedSample : dc.getAdmittedSamples()) {
 							
@@ -98,23 +101,22 @@ public class Benchmark1 {
 							}
 							
 							if (-1 != newErrorIndex) {
-								Sample newSample = admittedSample.getParentDataset().getSample(Parameters.errorBounds[newErrorIndex]);
+								Sample newSample = admittedSample.getParentDataset().getSample(Parameters.errorBounds[newErrorIndex]);	
 								adjustedSamples.add(newSample);
-								newSample.setToBePlaced(dc);
-								Set<Query> admittedQueriesThisSample = dc.getAdmittedQueriesSamples().get(admittedSample);
-								dc.getAdmittedQueriesSamples().remove(admittedSample);
-								dc.getAdmittedQueriesSamples().put(newSample, admittedQueriesThisSample);
+								sampleQueries.put(newSample, dc.getAdmittedQueriesSamples().get(admittedSample));
 								haveSampleErrorsIncreased = true; 
 							} else {
 								adjustedSamples.add(admittedSample);
+								sampleQueries.put(admittedSample, dc.getAdmittedQueriesSamples().get(admittedSample));
 							}
 						}
+						
 						if (haveSampleErrorsIncreased)
 							numOfDCsHaveSampleErrorIncreased ++; 
 						
 						dc.setAdmittedSamples(adjustedSamples);
+						dc.setAdmittedQueriesSamples(sampleQueries);
 					}
-					
 				}
 				
 				double error = Parameters.errorBounds[errorIndexForUnAdmitted];
@@ -122,60 +124,51 @@ public class Benchmark1 {
 				for (Iterator<Query> iter = toBeAssignedQueries.iterator(); iter.hasNext(); ) {
 					
 					Query toBeAdmittedQuery = iter.next();
-					ArrayList<DataCenter> sampleAdmissions = new ArrayList<DataCenter>();
+					Map<Sample, DataCenter> sampleAdmissions = new HashMap<Sample, DataCenter>();
 					for (Dataset ds : toBeAdmittedQuery.getDatasets()) {
 						
 						Sample toBeAdmittedSample = ds.getSample(error);
 						
-						DataCenter minCostWithinDelayDC = null; 
-						double minCost = Double.MAX_VALUE;
+						DataCenter maxAvailableDC = null; 
+						double maxAvail = Double.MIN_VALUE;
 						for (DataCenter dc : simulator.getDataCenters()) {
 							
-							double cost = 0d; 
 							double delay = 0d; 
 							if (!toBeAdmittedSample.getParentDataset().getDatacenter().equals(dc)) {
-								DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, toBeAdmittedSample.getParentDataset().getDatacenter(), dc);
-								cost = Double.MAX_VALUE;
+								DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, toBeAdmittedQuery.getHomeDataCenter(), dc);
+								delay = Double.MAX_VALUE;
 								for (int i = 0; i < shortestPath.getPathEdgeList().size(); i ++){
 									if (0 == i ) 
-										cost = 0d;
-									cost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(i));
+										delay = 0d;
 									delay += shortestPath.getPathEdgeList().get(i).getDelay();
 								}
 							}
 							
-							double updateCost = 0d;
-							if(!toBeAdmittedSample.getParentDataset().getDatacenter().equals(dc)) {
-								DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, toBeAdmittedSample.getParentDataset().getDatacenter(), dc);
-								updateCost = Double.MAX_VALUE;
-								for (int e = 0; e < shortestPath.getPathEdgeList().size(); e++) {
-									if (0 == e ) 
-										updateCost = 0d;
-									updateCost += datacenterNetwork.getEdgeWeight(shortestPath.getPathEdgeList().get(e));
+							delay *= toBeAdmittedSample.getVolume();
+							
+							double availR = dc.getAvailableComputing();
+							
+							if (!dc.isSampleAdmitted(toBeAdmittedSample)) {
+								if (delay < toBeAdmittedQuery.getDelayRequirement() && availR > maxAvail){
+									maxAvail= availR; 
+									maxAvailableDC = dc; 
 								}
-							}
-							cost += dc.getProcessingCost() + dc.getStorageCost() + updateCost;
-							
-							cost *= toBeAdmittedSample.getVolume();
-							
-							if (delay < toBeAdmittedQuery.getDelayRequirement() && minCost > cost && (toBeAdmittedSample.getVolume() * Parameters.computingAllocatedToUnitData < dc.getAvailableComputing() )){
-								minCost = cost; 
-								minCostWithinDelayDC = dc; 
+							} else {
+								if (delay < toBeAdmittedQuery.getDelayRequirement() && availR > maxAvail && (toBeAdmittedSample.getVolume() * Parameters.computingAllocatedToUnitData < availR)){
+									maxAvail= availR; 
+									maxAvailableDC = dc; 
+								}
 							}
 						}
 						
-						if (null != minCostWithinDelayDC){
-							sampleAdmissions.add(minCostWithinDelayDC);
+						if (null != maxAvailableDC) {
+							sampleAdmissions.put(toBeAdmittedSample, maxAvailableDC);
 						}
 					}
 					
 					if (sampleAdmissions.size() == toBeAdmittedQuery.getDatasets().size()) {
-						for (int i = 0; i < toBeAdmittedQuery.getDatasets().size(); i ++){
-							
-							Sample toBeAdmittedSample = toBeAdmittedQuery.getDatasets().get(i).getSample(error);
-							DataCenter dc = sampleAdmissions.get(i);
-							dc.admitSample(toBeAdmittedSample, toBeAdmittedQuery);
-							toBeAdmittedSample.setToBePlaced(dc);
+						for (Entry<Sample, DataCenter> entry : sampleAdmissions.entrySet()) {
+							entry.getValue().admitSample(entry.getKey(), toBeAdmittedQuery);
 						}
 						iter.remove();//  admit this query
 					} else {
@@ -203,6 +196,9 @@ public class Benchmark1 {
 			
 			for (DataCenter dc : this.simulator.getDataCenters()) {
 				// storage cost for all placed samples
+				if (dc.getAdmittedSamples().isEmpty())
+					continue; 
+				
 				for (Sample admittedSample : dc.getAdmittedSamples()) {
 					totalStorageCostTrial += admittedSample.getVolume() * dc.getStorageCost();
 					totalProcessCostTrial += admittedSample.getVolume() * dc.getProcessingCost();
@@ -246,6 +242,7 @@ public class Benchmark1 {
 					}
 				}
 			}
+			
 			this.getCostTrials().set(trial, totalAccessCostTrial + totalStorageCostTrial + totalUpdateCostTrial + totalProcessCostTrial);
 			this.getAccessCostTrials().set(trial, totalAccessCostTrial);
 			this.getStorageCostTrials().set(trial, totalStorageCostTrial);

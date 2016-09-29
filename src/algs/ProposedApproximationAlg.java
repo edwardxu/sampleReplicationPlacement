@@ -40,6 +40,8 @@ public class ProposedApproximationAlg {
 	
 	private List<Double> averageErrorTrials = new ArrayList<Double>();
 	
+	private double lowestError = Parameters.errorBounds[0];
+	
 	private double optimalLowerBound = -1d;
 
 	/************* construction function *****************/
@@ -72,7 +74,14 @@ public class ProposedApproximationAlg {
 			
 			// the algorithm is divided into steps
 			// step (1), solve the ILP
-			int currErrorIndex = -1; 
+			int currErrorIndex = -1;
+			for (int i = 0; i < Parameters.errorBounds.length; i ++) {
+				if (this.getLowestError() == Parameters.errorBounds[i]){
+					currErrorIndex = i - 1;
+					break;
+				}
+			}
+			
 			boolean success = false;
 			if ((!success)&&(currErrorIndex < Parameters.errorBounds.length )){
 				currErrorIndex ++; 
@@ -99,6 +108,10 @@ public class ProposedApproximationAlg {
 			
 			if (success) {
 				for (DataCenter dc : this.simulator.getDataCenters()) {
+					
+					if (dc.getAdmittedSamples().isEmpty())
+						continue; 
+					
 					// storage cost for all placed samples
 					for (Sample admittedSample : dc.getAdmittedSamples()) {
 						totalStorageCostTrial += admittedSample.getVolume() * dc.getStorageCost();
@@ -908,5 +921,13 @@ public class ProposedApproximationAlg {
 
 	public void setAverageErrorTrials(List<Double> averageErrorTrials) {
 		this.averageErrorTrials = averageErrorTrials;
+	}
+
+	public double getLowestError() {
+		return lowestError;
+	}
+
+	public void setLowestError(double lowestError) {
+		this.lowestError = lowestError;
 	}
 }
