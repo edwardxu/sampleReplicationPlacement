@@ -14,7 +14,7 @@ public class Parameters {
 	
 	//Data centre resource capacity ranges
 	final public static double maxComputingPerDC = 2000;//GHz  //the maximum computing capacity of a data center
-	final public static double minComputingPerDC = 1000;//GHz  //the minimum computing capacity of a data center
+	final public static double minComputingPerDC = 500;//1000 GHz  //the minimum computing capacity of a data center
 
 	final public static double minLinkDelay = 10; //ms
 	final public static double maxLinkDelay = 100; //ms 50
@@ -34,7 +34,7 @@ public class Parameters {
 	
 	//public static int numOfSamplesEachDataset = 3;
 	/**************queries****************/
-	public static int maxNumOfQueriesPerTS = 100; // to be reset
+	public static int maxNumOfQueriesPerTS = 200; //100 to be reset
 	public static int minNumOfQueriesPerTS = 50; // to be reset
 	
 	final public static int queryRateMax = 10;// to be reset
@@ -57,7 +57,7 @@ public class Parameters {
 	final public static double processCostUnitDataMax = 0.1;//0.22 $ per GB data // c_p(v_i) 
 	final public static double processCostUnitDataMin = 0.05;//0.15 $ per GB data // c_p(v_i)
 	
-	final public static double computingAllocatedToUnitData = 30;//10 GHz $ per GB //r_c
+	final public static double computingAllocatedToUnitData = 20;//10 GHz $ per GB //r_c
 	
 	final public static double bandwidthAllocatedToUnitData = 0.065;//Gbps $ per GB //r_t
 	

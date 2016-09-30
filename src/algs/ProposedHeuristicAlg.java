@@ -377,20 +377,22 @@ public class ProposedHeuristicAlg {
 					flowNetwork.removeEdge(previousEdge);
 				
 				//check the delay from the home datacenter of the query to dcNode, if yes, there is an edge
-				DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(dcNetwork, demandNode.getDataset().getDatacenter(), dcNode);
-				double delay = Double.MAX_VALUE;
-				for (int i = 0; i < shortestPath.getPathEdgeList().size(); i ++){
-					if (0 == i ) {
-						delay = 0d;
+				double delay = 0d;
+				if (demandNode.getDataset().getDatacenter().equals(dcNode)){
+					DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(dcNetwork, demandNode.getDataset().getDatacenter(), dcNode);
+					delay = Double.MAX_VALUE;
+					for (int i = 0; i < shortestPath.getPathEdgeList().size(); i ++){
+						if (0 == i ) {
+							delay = 0d;
+						}
+						delay += shortestPath.getPathEdgeList().get(i).getDelay();
 					}
-					delay += shortestPath.getPathEdgeList().get(i).getDelay();
 				}
-				
 				Sample sample = demandNode.getDataset().getSample(error); 
 				
 				delay *= sample.getVolume();
 				
-				if (((DataCenter) dcNode).isSampleAdmitted(sample)){
+				if (((DataCenter) dcNode).isSampleAdmitted(sample)) {
 					if (delay <= demandNode.getQuery().getDelayRequirement() )
 						flowNetwork.addEdge(comm.getSource(), dcNode);
 				} else {
@@ -452,13 +454,16 @@ public class ProposedHeuristicAlg {
 			DemandNode demandNode = (DemandNode) deNode;
 			for (Node dcNode : dcNodes) {
 				//check the delay from the home datacenter of the query to dcNode, if yes, there is an edge
-				DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(dcNetwork, demandNode.getDataset().getDatacenter(), dcNode);
-				double delay = Double.MAX_VALUE;
-				for (int i = 0; i < shortestPath.getPathEdgeList().size(); i ++){
-					if (0 == i ) {
-						delay = 0d;
+				double delay = 0d; 
+				if (!demandNode.getDataset().getDatacenter().equals(dcNode)) {
+					DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(dcNetwork, demandNode.getDataset().getDatacenter(), dcNode);
+					delay = Double.MAX_VALUE;
+					for (int i = 0; i < shortestPath.getPathEdgeList().size(); i ++){
+						if (0 == i ) {
+							delay = 0d;
+						}
+						delay += shortestPath.getPathEdgeList().get(i).getDelay();
 					}
-					delay += shortestPath.getPathEdgeList().get(i).getDelay();
 				}
 				
 				delay *= demandNode.getDataset().getSample(error).getVolume();

@@ -163,21 +163,23 @@ public class Benchmark1 {
 						
 						if (null != maxAvailableDC) {
 							sampleAdmissions.put(toBeAdmittedSample, maxAvailableDC);
+							maxAvailableDC.admitSample(toBeAdmittedSample, toBeAdmittedQuery);
 						}
 					}
 					
 					if (sampleAdmissions.size() == toBeAdmittedQuery.getDatasets().size()) {
-						for (Entry<Sample, DataCenter> entry : sampleAdmissions.entrySet()) {
-							entry.getValue().admitSample(entry.getKey(), toBeAdmittedQuery);
-						}
 						iter.remove();//  admit this query
 					} else {
+						for (Entry<Sample, DataCenter> entry : sampleAdmissions.entrySet()) {
+							entry.getValue().removeSample(entry.getKey(), toBeAdmittedQuery);
+						}
+						
 						if (increaseAdmittedErrors && (numOfDCsHaveSampleErrorIncreased == 0)){
 							rejectedQueries.add(toBeAdmittedQuery);
 							iter.remove();
 							continue; 
 						}
-					}			
+					}
 				}
 				
 				if (!toBeAssignedQueries.isEmpty()) {

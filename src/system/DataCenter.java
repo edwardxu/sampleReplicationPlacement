@@ -77,12 +77,15 @@ public class DataCenter extends Node {
 
 	}
 	
-	public void removeSample(Sample sample){
+	public void removeSample(Sample sample, Query query){
 		if (!this.getAdmittedSamples().contains(sample))
 			System.out.println("Sample not exist! Removal failure!");
 		else {
-			this.getAdmittedSamples().remove(sample);
-			this.getAdmittedQueriesSamples().remove(sample);
+			this.getAdmittedQueriesSamples().get(sample).remove(query);			
+			if (this.getAdmittedQueriesSamples().get(sample).isEmpty()){
+				this.getAdmittedSamples().remove(sample);
+				this.getAdmittedQueriesSamples().remove(sample);
+			}
 		}
 	}
 	
