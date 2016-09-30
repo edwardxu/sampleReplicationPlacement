@@ -1,0 +1,24 @@
+
+Model name:  '' - run #1    
+Objective:   Minimize(R0)
+ 
+SUBMITTED
+Model size:    17415 constraints,   11500 variables,        34497 non-zeros.
+Sets:                                   0 GUB,                  0 SOS.
+ 
+Using DUAL simplex for phase 1 and PRIMAL simplex for phase 2.
+The primal and dual simplex pricing strategy set to 'Devex'.
+ 
+ 
+Optimal solution       352.329031321 after       2535 iter.
+
+Excellent numeric accuracy ||*|| = 4.44089e-16
+
+ MEMO: lp_solve version 5.5.2.0 for 64 bit OS, with 64 bit REAL variables.
+      In the total iteration count 2535, 0 (0.0%) were bound flips.
+      There were 10 refactorizations, 0 triggered by time and 0 by density.
+       ... on average 253.5 major pivots per refactorization.
+      The largest [LUSOL v2.2.1.0] fact(B) had 24839 NZ entries, 1.0x largest basis.
+      The constraint matrix inf-norm is 264.082, with a dynamic range of 264.082.
+      Time to load data was 2.000 seconds, presolve used 0.000 seconds,
+       ... 2.000 seconds in simplex solver, in total 4.000 seconds.

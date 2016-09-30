@@ -10,7 +10,6 @@ public class Sample extends Node {
 	private double volume;
 	private Dataset parentDataset;
 	//private double lifeCycle;//how many time slots that this sample can live in the system
-	private DataCenter toBePlaced = null;//the destination where this sample will finally be placed
 
 	public Sample(Dataset parent, int errorIndex) {
 		super(SamplePlacementSimulator.idAllocator.nextId(), "Sample");
@@ -51,14 +50,6 @@ public class Sample extends Node {
 
 	public void setParentDataset(Dataset parentDataset) {
 		this.parentDataset = parentDataset;
-	}
-	
-	public DataCenter getToBePlaced() {
-		return toBePlaced;
-	}
-
-	public void setToBePlaced(DataCenter toBePlaced) {
-		this.toBePlaced = toBePlaced;
 	}
 
 }

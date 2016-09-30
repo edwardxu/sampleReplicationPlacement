@@ -40,6 +40,10 @@ public class Dataset {
 //			return false;
 //	}
 	
+	public void reset(){
+		this.setPlacedSamples(new HashSet<Sample>());
+	}
+	
 	public Sample getSample(double error) {
 		for (Sample sample : this.getSamples()){
 			if (error == sample.getError())

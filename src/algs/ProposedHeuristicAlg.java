@@ -1,9 +1,11 @@
 package algs;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -36,6 +38,10 @@ public class ProposedHeuristicAlg {
 	private List<Double> accessCostTrials = new ArrayList<Double>();
 	private List<Double> processCostTrials = new ArrayList<Double>();
 
+	private List<Double> averageErrorTrials = new ArrayList<Double>();
+	
+	private double lowestError = Parameters.errorBounds[0];
+	
 	/************* construction function *****************/
 	public ProposedHeuristicAlg(SamplePlacementSimulator simulator) {
 		this.simulator = simulator;
@@ -46,6 +52,7 @@ public class ProposedHeuristicAlg {
 			this.updateCostTrials.add(i, 0.0);
 			this.accessCostTrials.add(i, 0.0);
 			this.processCostTrials.add(i, 0.0);
+			this.averageErrorTrials.add(i, 0.0);
 		}
 	}
 
@@ -63,6 +70,13 @@ public class ProposedHeuristicAlg {
 			List<Commodity> commodities = new ArrayList<Commodity>();
 			List<Commodity> rejectedCommodities = new ArrayList<Commodity>();
 			int errorIndexForUnAdmitted = 0;
+			for (int i = 0; i < Parameters.errorBounds.length; i ++) {
+				if (this.getLowestError() == Parameters.errorBounds[i]){
+					errorIndexForUnAdmitted = i;
+					break;
+				}
+			}
+			
 			SimpleWeightedGraph<Node, MinCostFlowEdge> flowNet = this.initializeFlowNetwork(datacenterNetwork, commodities, trial, Parameters.errorBounds[errorIndexForUnAdmitted]);
 			boolean increaseAdmittedErrors = false;
 			
@@ -70,8 +84,11 @@ public class ProposedHeuristicAlg {
 				
 				int numOfDCsHaveSampleErrorIncreased = 0; 
 				if (increaseAdmittedErrors) {
+					
 					for (DataCenter dc : this.simulator.getDataCenters()) {
 						Set<Sample> adjustedSamples = new HashSet<Sample>();
+						Map<Sample, Set<Query>> sampleQueries = new HashMap<Sample, Set<Query>>();
+						
 						boolean haveSampleErrorsIncreased = false; 
 						for (Sample admittedSample : dc.getAdmittedSamples()) {
 							
@@ -85,22 +102,24 @@ public class ProposedHeuristicAlg {
 							}
 							
 							if (-1 != newErrorIndex) {
-								Sample newSample = admittedSample.getParentDataset().getSample(Parameters.errorBounds[newErrorIndex]);
+								Sample newSample = admittedSample.getParentDataset().getSample(Parameters.errorBounds[newErrorIndex]);	
 								adjustedSamples.add(newSample);
-								newSample.setToBePlaced(dc);
-								Set<Query> admittedQueriesThisSample = dc.getAdmittedQueriesSamples().get(admittedSample);
-								dc.getAdmittedQueriesSamples().remove(admittedSample);
-								dc.getAdmittedQueriesSamples().put(newSample, admittedQueriesThisSample);
+								sampleQueries.put(newSample, dc.getAdmittedQueriesSamples().get(admittedSample));
 								haveSampleErrorsIncreased = true; 
 							} else {
 								adjustedSamples.add(admittedSample);
+								sampleQueries.put(admittedSample, dc.getAdmittedQueriesSamples().get(admittedSample));
 							}
 						}
+						
 						if (haveSampleErrorsIncreased)
 							numOfDCsHaveSampleErrorIncreased ++; 
 						
 						dc.setAdmittedSamples(adjustedSamples);
+						dc.setAdmittedQueriesSamples(sampleQueries);
 					}
+					
+					
 					
 					flowNet = adjustFlowNetwork(datacenterNetwork, flowNet, commodities, Parameters.errorBounds[errorIndexForUnAdmitted]);
 				}
@@ -123,8 +142,8 @@ public class ProposedHeuristicAlg {
 						if (increaseAdmittedErrors && (numOfDCsHaveSampleErrorIncreased == 0)){
 							rejectedCommodities.add(comm);
 							iter.remove();
-							continue; 
 						}
+						continue;
 					}
 					
 					DataCenter targetDC = null;
@@ -144,7 +163,6 @@ public class ProposedHeuristicAlg {
 					
 					// admit this sample into "targetDC"
 					targetDC.admitSample(toBeAdmittedSample, toBeAdmittedQuery);
-					toBeAdmittedSample.setToBePlaced(targetDC);
 					iter.remove();//  admit this commodity and remove it from the list. 
 				}
 				
@@ -158,11 +176,16 @@ public class ProposedHeuristicAlg {
 				}
 			}// end while
 			
-			double totalStorageCostTrial = 0d; 
-			double totalUpdateCostTrial = 0d; 
-			double totalAccessCostTrial = 0d; 
+			double totalStorageCostTrial = 0d;
+			double totalUpdateCostTrial = 0d;
+			double totalAccessCostTrial = 0d;
 			double totalProcessCostTrial = 0d;
+			
 			for (DataCenter dc : this.simulator.getDataCenters()) {
+				
+				if (dc.getAdmittedSamples().isEmpty())
+					continue; 
+				
 				// storage cost for all placed samples
 				for (Sample admittedSample : dc.getAdmittedSamples()) {
 					totalStorageCostTrial += admittedSample.getVolume() * dc.getStorageCost();
@@ -190,7 +213,7 @@ public class ProposedHeuristicAlg {
 					
 					for (Query accessQuery : entry.getValue()) {
 						double accessCost = 0d;
-						if (!accessQuery.getHomeDataCenter().equals(dc)){
+						if (!accessQuery.getHomeDataCenter().equals(dc)) {
 							DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(datacenterNetwork, accessQuery.getHomeDataCenter(), dc);
 							accessCost = Double.MAX_VALUE;
 							for (int i = 0; i < shortestPath.getPathEdgeList().size(); i ++){
@@ -212,6 +235,34 @@ public class ProposedHeuristicAlg {
 			this.getStorageCostTrials().set(trial, totalStorageCostTrial);
 			this.getUpdateCostTrials().set(trial, totalUpdateCostTrial);
 			this.getProcessCostTrials().set(trial, totalProcessCostTrial);
+			
+			Map<Query, Set<Sample>> queryPlacedSamples = new HashMap<Query, Set<Sample>>();
+			for (DataCenter dc : this.simulator.getDataCenters()) {
+				for (Entry<Sample, Set<Query>> entry : dc.getAdmittedQueriesSamples().entrySet()){
+					for (Query query : entry.getValue()) {
+						if (null == queryPlacedSamples.get(query))
+							queryPlacedSamples.put(query, new HashSet<Sample>());
+						queryPlacedSamples.get(query).add(entry.getKey());					
+					}
+				}
+			}
+			
+			double averageError = 0d; 
+			for (Entry<Query, Set<Sample>> entry : queryPlacedSamples.entrySet()) {
+				
+				double totalSampleVolume = 0d; 
+				for (Sample sam : entry.getValue())
+					totalSampleVolume += sam.getVolume();
+				
+				double errorQ = 0d; 
+				for (Sample sam : entry.getValue())
+					errorQ += (sam.getError() * sam.getVolume() / totalSampleVolume);
+				
+				averageError += errorQ;
+			}
+			averageError /= queryPlacedSamples.size(); 
+			
+			this.getAverageErrorTrials().set(trial, averageError);
 		}// end for trials;
 	}
 	
@@ -326,18 +377,22 @@ public class ProposedHeuristicAlg {
 					flowNetwork.removeEdge(previousEdge);
 				
 				//check the delay from the home datacenter of the query to dcNode, if yes, there is an edge
-				DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(dcNetwork, demandNode.getDataset().getDatacenter(), dcNode);
-				double delay = Double.MAX_VALUE;
-				for (int i = 0; i < shortestPath.getPathEdgeList().size(); i ++){
-					if (0 == i ) {
-						delay = 0d;
+				double delay = 0d;
+				if (demandNode.getDataset().getDatacenter().equals(dcNode)){
+					DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(dcNetwork, demandNode.getDataset().getDatacenter(), dcNode);
+					delay = Double.MAX_VALUE;
+					for (int i = 0; i < shortestPath.getPathEdgeList().size(); i ++){
+						if (0 == i ) {
+							delay = 0d;
+						}
+						delay += shortestPath.getPathEdgeList().get(i).getDelay();
 					}
-					delay += shortestPath.getPathEdgeList().get(i).getDelay();
 				}
-				
 				Sample sample = demandNode.getDataset().getSample(error); 
 				
-				if (((DataCenter) dcNode).isSampleAdmitted(sample)){
+				delay *= sample.getVolume();
+				
+				if (((DataCenter) dcNode).isSampleAdmitted(sample)) {
 					if (delay <= demandNode.getQuery().getDelayRequirement() )
 						flowNetwork.addEdge(comm.getSource(), dcNode);
 				} else {
@@ -399,14 +454,19 @@ public class ProposedHeuristicAlg {
 			DemandNode demandNode = (DemandNode) deNode;
 			for (Node dcNode : dcNodes) {
 				//check the delay from the home datacenter of the query to dcNode, if yes, there is an edge
-				DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(dcNetwork, demandNode.getDataset().getDatacenter(), dcNode);
-				double delay = Double.MAX_VALUE;
-				for (int i = 0; i < shortestPath.getPathEdgeList().size(); i ++){
-					if (0 == i ) {
-						delay = 0d;
+				double delay = 0d; 
+				if (!demandNode.getDataset().getDatacenter().equals(dcNode)) {
+					DijkstraShortestPath<Node, InternetLink> shortestPath = new DijkstraShortestPath<Node, InternetLink>(dcNetwork, demandNode.getDataset().getDatacenter(), dcNode);
+					delay = Double.MAX_VALUE;
+					for (int i = 0; i < shortestPath.getPathEdgeList().size(); i ++){
+						if (0 == i ) {
+							delay = 0d;
+						}
+						delay += shortestPath.getPathEdgeList().get(i).getDelay();
 					}
-					delay += shortestPath.getPathEdgeList().get(i).getDelay();
 				}
+				
+				delay *= demandNode.getDataset().getSample(error).getVolume();
 				
 				if (delay <= demandNode.getQuery().getDelayRequirement() && 
 						(demandNode.getDataset().getSample(error).getVolume() * Parameters.computingAllocatedToUnitData < ((DataCenter) dcNode).getAvailableComputing())) {
@@ -492,6 +552,22 @@ public class ProposedHeuristicAlg {
 
 	public void setProcessCostTrials(List<Double> processCostPerTS) {
 		this.processCostTrials = processCostPerTS;
+	}
+
+	public List<Double> getAverageErrorTrials() {
+		return averageErrorTrials;
+	}
+
+	public void setAverageErrorTrials(List<Double> averageErrorTrials) {
+		this.averageErrorTrials = averageErrorTrials;
+	}
+
+	public double getLowestError() {
+		return lowestError;
+	}
+
+	public void setLowestError(double lowestError) {
+		this.lowestError = lowestError;
 	}
 
 }
