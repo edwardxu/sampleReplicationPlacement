@@ -41,8 +41,8 @@ public class SamplePlacementSimulator {
 		//performanceHeuristic();
 		//performanceApproximation();
 		//performance();
-		performanceHeuAppro();
-		//impactOfErrorOnCost();
+		//performanceHeuAppro();
+		impactOfErrorOnCost();
 	}
 	
 	public static void performance() {
